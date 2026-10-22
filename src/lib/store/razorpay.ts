@@ -64,3 +64,33 @@ export async function createRazorpayOrder(
     return { ok: false, status: 0 };
   }
 }
+
+export type RefundResult = { ok: true; refundId: string } | { ok: false; status: number };
+
+interface RefundInput {
+  paymentId: string;
+  amountPaise: number;
+  /** Our order number; lets staff match the refund in the Razorpay dashboard. */
+  receipt: string;
+}
+
+/** Full or partial refund of a captured payment. */
+export async function refundRazorpayPayment(input: RefundInput, keys: RazorpayKeys, fetchImpl: typeof fetch = fetch): Promise<RefundResult> {
+  // payment_ref comes from our database, but it is placed in a URL path, so keep it strict
+  if (!/^pay_[A-Za-z0-9]{1,40}$/.test(input.paymentId)) return { ok: false, status: 0 };
+  const auth = Buffer.from(`${keys.keyId}:${keys.keySecret}`).toString("base64");
+  try {
+    const response = await fetchImpl(`https://api.razorpay.com/v1/payments/${input.paymentId}/refund`, {
+      method: "POST",
+      headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: input.amountPaise, receipt: input.receipt }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!response.ok) return { ok: false, status: response.status };
+    const body: unknown = await response.json();
+    const id = typeof body === "object" && body !== null ? (body as { id?: unknown }).id : undefined;
+    return typeof id === "string" ? { ok: true, refundId: id } : { ok: false, status: response.status };
+  } catch {
+    return { ok: false, status: 0 };
+  }
+}

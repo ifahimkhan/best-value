@@ -4,6 +4,9 @@ export const BRAND = {
   supportEmail: "support@bestvalue.example", // TODO: replace with real support inbox
   currency: "INR",
   locale: "en-IN",
+  /** Browser chrome colour (matches --background) and accent for third-party widgets (matches --brand). */
+  themeColor: "#0a0a0a",
+  accentColor: "#c9a24a",
 } as const;
 
 const inrFormatter = new Intl.NumberFormat(BRAND.locale, {

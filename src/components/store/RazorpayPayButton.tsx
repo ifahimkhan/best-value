@@ -71,7 +71,7 @@ export function RazorpayPayButton({ keyId, orderNo, gatewayOrderId, amountPaise,
       name: BRAND.name,
       description: `Order ${orderNo}`,
       prefill,
-      theme: { color: "#0f7a4d" },
+      theme: { color: BRAND.accentColor },
       handler: handleSuccess,
     });
     checkout.on("payment.failed", () => setError("The payment did not go through. You have not been charged; please try again."));

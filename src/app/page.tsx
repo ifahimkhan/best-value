@@ -48,10 +48,10 @@ async function CategoryGrid() {
 export default function HomePage() {
   return (
     <>
-      <section className="bg-brand-soft">
+      <section className="hero-glow border-b border-border">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-16 md:grid-cols-2 md:items-center">
           <div>
-            <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl">
+            <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">
               Your old phone is worth more than you think.
             </h1>
             <p className="mt-4 text-lg text-muted">

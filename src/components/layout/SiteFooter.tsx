@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { NewsletterForm } from "@/components/content/NewsletterForm";
 import { BRAND } from "@/lib/brand";
+import { Logo } from "./Logo";
 
 const FOOTER_COLUMNS = [
   {
@@ -44,7 +45,7 @@ export function SiteFooter() {
     <footer className="mt-auto border-t border-border bg-surface">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-5">
         <div>
-          <p className="text-lg font-extrabold">{BRAND.name}</p>
+          <Logo className="pt-2 text-2xl" />
           <p className="mt-2 text-sm text-muted">{BRAND.tagline}</p>
           <div className="mt-6">
             <NewsletterForm />

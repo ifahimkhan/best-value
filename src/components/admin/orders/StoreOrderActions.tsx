@@ -49,7 +49,7 @@ export function StoreOrderActions({ orderNo, status, paymentStatus, totalLabel, 
         if (to === "refunded") return <RefundForms key={to} orderNo={orderNo} totalLabel={totalLabel} canRefundOnline={canRefundOnline} />;
         if (to === "cancelled") {
           return (
-            <ActionForm key={to} action={transitionStoreOrderAction} orderNo={orderNo} submitLabel="Cancel order" tone="danger" hidden={{ toStatus: to }}>
+            <ActionForm key={to} action={transitionStoreOrderAction} orderNo={orderNo} submitLabel={status === "shipped" ? "Cancel order (parcel returned)" : "Cancel order"} tone="danger" hidden={{ toStatus: to }}>
               <p className="text-sm text-muted">
                 Items go back into stock.{paymentStatus === "captured" && " The order will then need a refund."}
               </p>

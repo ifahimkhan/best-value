@@ -95,7 +95,7 @@ export async function confirmPayment(input: PaymentProofInput): Promise<Checkout
 
   const result = await markStoreOrderPaid(proof.razorpayOrderId, proof.razorpayPaymentId, toPaise(order.total));
   // Paid but nothing to ship: the order page explains the refund; keep the cart
-  if (result === "needs_refund") redirect(`/account/orders/${proof.orderNo}`);
+  if (result === "needs_refund" || result === "already_refunded") redirect(`/account/orders/${proof.orderNo}`);
   if (result !== "paid" && result !== "already_paid") return { error: VERIFY_ERROR };
 
   await writeCart([]);

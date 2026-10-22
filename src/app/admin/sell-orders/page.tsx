@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { FilterTabs, pickFilter } from "@/components/admin/orders/FilterTabs";
-import { listSellOrders, SELL_FILTERS, type SellFilter } from "@/lib/admin/sell-orders";
+import { LIST_LIMIT, listSellOrders, SELL_FILTERS, type SellFilter } from "@/lib/admin/sell-orders";
 import { requireStaff } from "@/lib/auth/session";
 import { formatInr } from "@/lib/brand";
 import { SELL_STATUS_LABELS } from "@/lib/sell/status";
@@ -16,27 +16,32 @@ async function SellOrderTable({ filter }: { filter: SellFilter }) {
   const orders = await listSellOrders(filter);
   if (orders.length === 0) return <p className="text-sm text-muted">No orders here.</p>;
   return (
-    <ul className="divide-y divide-border rounded-xl border border-border bg-surface text-sm">
-      {orders.map((o) => (
-        <li key={o.orderNo}>
-          <Link href={`/admin/sell-orders/${o.orderNo}`} className="grid gap-1 p-3 hover:bg-brand-soft sm:grid-cols-[9rem_1fr_9rem_7rem] sm:items-center">
-            <span className="font-medium">{o.orderNo}</span>
-            <span className="min-w-0 truncate">
-              {o.deviceName}
-              {o.variantLabel && ` · ${o.variantLabel}`}
-              {o.city && <span className="text-muted"> · {o.city}</span>}
-            </span>
-            <span className="text-muted">
-              {dateFormat.format(new Date(`${o.pickupDate}T00:00:00+05:30`))} · {o.pickupSlot}
-            </span>
-            <span className="sm:text-right">
-              <span className="block font-semibold">{formatInr(o.finalPrice ?? o.quotedPrice)}</span>
-              <span className="text-xs text-muted">{SELL_STATUS_LABELS[o.status]}</span>
-            </span>
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="divide-y divide-border rounded-xl border border-border bg-surface text-sm">
+        {orders.map((o) => (
+          <li key={o.orderNo}>
+            <Link href={`/admin/sell-orders/${o.orderNo}`} className="grid gap-1 p-3 hover:bg-brand-soft sm:grid-cols-[9rem_1fr_9rem_7rem] sm:items-center">
+              <span className="font-medium">{o.orderNo}</span>
+              <span className="min-w-0 truncate">
+                {o.deviceName}
+                {o.variantLabel && ` · ${o.variantLabel}`}
+                {o.city && <span className="text-muted"> · {o.city}</span>}
+              </span>
+              <span className="text-muted">
+                {dateFormat.format(new Date(`${o.pickupDate}T00:00:00+05:30`))} · {o.pickupSlot}
+              </span>
+              <span className="sm:text-right">
+                <span className="block font-semibold">{formatInr(o.finalPrice ?? o.quotedPrice)}</span>
+                <span className="text-xs text-muted">{SELL_STATUS_LABELS[o.status]}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {orders.length === LIST_LIMIT && (
+        <p className="mt-3 text-sm text-muted">Showing the first {LIST_LIMIT} orders. Use the filters to narrow the list.</p>
+      )}
+    </>
   );
 }
 

@@ -11,7 +11,7 @@ import type { StoreUpdate } from "./transitions";
 
 export const STORE_FILTERS = ["to_ship", "needs_refund", "pending_payment", "shipped", "delivered", "cancelled", "refunded", "all"] as const;
 export type StoreFilter = (typeof STORE_FILTERS)[number];
-const LIST_LIMIT = 100;
+export const LIST_LIMIT = 100;
 
 const ITEMS_SELECT = "items:order_items(sku, title, hsn_code, gst_rate, unit_price, qty)";
 const SUMMARY_SELECT = `order_no, status, payment_status, subtotal, gst_amount, shipping_fee, total, created_at, ${ITEMS_SELECT}`;

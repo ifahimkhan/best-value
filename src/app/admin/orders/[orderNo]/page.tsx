@@ -49,7 +49,7 @@ function Details({ order }: { order: AdminStoreOrder }) {
 }
 
 async function StoreOrderContent({ orderNo }: { orderNo: string }) {
-  await requireStaff();
+  const user = await requireStaff();
   const order = await getStoreOrder(orderNo);
   if (!order) notFound();
   const needsRefund = order.status === "cancelled" && order.paymentStatus === "captured";
@@ -94,7 +94,7 @@ async function StoreOrderContent({ orderNo }: { orderNo: string }) {
           status={order.status}
           paymentStatus={order.paymentStatus}
           totalLabel={formatInr(order.total)}
-          canRefundOnline={Boolean(razorpayConfig()) && Boolean(order.paymentRef)}
+          canRefundOnline={user.role === "admin" && Boolean(razorpayConfig()) && Boolean(order.paymentRef)}
         />
       </aside>
     </div>

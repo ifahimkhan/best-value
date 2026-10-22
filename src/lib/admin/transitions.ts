@@ -20,7 +20,8 @@ export const STORE_NEXT: Readonly<Record<OrderStatus, readonly OrderStatus[]>> =
   pending_payment: ["cancelled"],
   paid: ["packed", "cancelled"],
   packed: ["shipped", "cancelled"],
-  shipped: ["delivered"],
+  // Cancelling a shipped order is for parcels returned to origin
+  shipped: ["delivered", "cancelled"],
   delivered: ["refunded"],
   cancelled: ["refunded"],
   refunded: [],
@@ -126,6 +127,11 @@ const DB_ERRORS: Record<string, string> = {
   tracking_locked: "Tracking can only change while the order is packed or shipped.",
   nothing_to_refund: "This order has no captured payment to refund.",
   refund_ref_required: "Enter the refund reference.",
+  payout_ref_locked: "The payout reference cannot change after the order is paid.",
+  payout_ref_only_when_paid: "The payout reference is set when marking the order paid.",
+  refund_ref_locked: "The refund reference cannot change after the refund is recorded.",
+  refund_ref_only_when_refunded: "The refund reference is set when recording the refund.",
+  cancel_reason_only_when_cancelling: "A cancel reason can only be given when cancelling.",
 };
 
 /** Turns a trigger exception into staff-facing text; anything else stays generic. */

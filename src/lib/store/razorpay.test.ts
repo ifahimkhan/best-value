@@ -69,8 +69,34 @@ describe("refundRazorpayPayment", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("reports gateway errors", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 400 }));
+  it("sends an idempotency key tied to the order", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: "rfnd_7" }), { status: 200 }));
+    await refundRazorpayPayment({ paymentId: "pay_ABC123", amountPaise: 1, receipt: "BV-O-000001" }, keys, fetchMock);
+    expect(fetchMock.mock.calls[0][1].headers["X-Refund-Idempotency"]).toBe("refund-BV-O-000001");
+  });
+
+  it("reports gateway errors when no earlier refund exists", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("{}", { status: 400 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{ id: "rfnd_other", receipt: "someone-else" }] }), { status: 200 }));
     expect(await refundRazorpayPayment({ paymentId: "pay_X1", amountPaise: 1, receipt: "r" }, keys, fetchMock)).toEqual({ ok: false, status: 400 });
+    expect(fetchMock.mock.calls[1][0]).toBe("https://api.razorpay.com/v1/payments/pay_X1/refunds");
+  });
+
+  it("returns the earlier refund when a retry is rejected as already refunded", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("{}", { status: 400 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{ id: "rfnd_1", receipt: "BV-O-000002", status: "processed" }] }), { status: 200 }));
+    expect(await refundRazorpayPayment({ paymentId: "pay_X1", amountPaise: 1, receipt: "BV-O-000002" }, keys, fetchMock)).toEqual({ ok: true, refundId: "rfnd_1" });
+  });
+
+  it("ignores failed earlier refunds", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("{}", { status: 400 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{ id: "rfnd_1", receipt: "BV-O-000002", status: "failed" }] }), { status: 200 }));
+    expect(await refundRazorpayPayment({ paymentId: "pay_X1", amountPaise: 1, receipt: "BV-O-000002" }, keys, fetchMock)).toEqual({ ok: false, status: 400 });
   });
 });

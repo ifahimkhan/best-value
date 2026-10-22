@@ -4,14 +4,15 @@ import { createClient } from "@/lib/supabase/server";
 
 const LOW_STOCK = 2;
 
+/** Each count is null when its query failed, so the page never shows a false 0. */
 export interface DashboardCounts {
-  pickupsToday: number;
-  openSellOrders: number;
-  awaitingPayout: number;
-  ordersToShip: number;
-  needsRefund: number;
-  lowStock: number;
-  failedImports: number;
+  pickupsToday: number | null;
+  openSellOrders: number | null;
+  awaitingPayout: number | null;
+  ordersToShip: number | null;
+  needsRefund: number | null;
+  lowStock: number | null;
+  failedImports: number | null;
 }
 
 /** Indian calendar date (YYYY-MM-DD) for "today" counts. */
@@ -34,6 +35,6 @@ export async function getDashboardCounts(now: Date): Promise<DashboardCounts> {
   ]);
   const failed = results.find((r) => r.error);
   if (failed?.error) logger.error("getDashboardCounts failed", failed.error);
-  const [pickupsToday, openSellOrders, awaitingPayout, ordersToShip, needsRefund, lowStock, failedImports] = results.map((r) => r.count ?? 0);
+  const [pickupsToday, openSellOrders, awaitingPayout, ordersToShip, needsRefund, lowStock, failedImports] = results.map((r) => (r.error ? null : (r.count ?? 0)));
   return { pickupsToday, openSellOrders, awaitingPayout, ordersToShip, needsRefund, lowStock, failedImports };
 }

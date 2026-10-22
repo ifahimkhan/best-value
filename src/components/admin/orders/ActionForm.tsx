@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useActionState, type FormEvent, type ReactNode } from "react";
-import type { AdminActionState } from "@/app/admin/sell-orders/actions";
+import type { AdminActionState } from "@/lib/admin/action-state";
 
 type Action = (prev: AdminActionState, form: FormData) => Promise<AdminActionState>;
 

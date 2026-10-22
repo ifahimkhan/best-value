@@ -74,19 +74,58 @@ interface RefundInput {
   receipt: string;
 }
 
-/** Full or partial refund of a captured payment. */
+function basicAuth(keys: RazorpayKeys): string {
+  return `Basic ${Buffer.from(`${keys.keyId}:${keys.keySecret}`).toString("base64")}`;
+}
+
+/** A pending or processed refund this order already made, e.g. when a retry is rejected. */
+async function findEarlierRefund(input: RefundInput, keys: RazorpayKeys, fetchImpl: typeof fetch): Promise<string | null> {
+  try {
+    const response = await fetchImpl(`https://api.razorpay.com/v1/payments/${input.paymentId}/refunds`, {
+      headers: { Authorization: basicAuth(keys) },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return null;
+    const body: unknown = await response.json();
+    const items = typeof body === "object" && body !== null ? (body as { items?: unknown }).items : undefined;
+    if (!Array.isArray(items)) return null;
+    const match = items.find(
+      (item): item is { id: string } =>
+        typeof item === "object" &&
+        item !== null &&
+        item.receipt === input.receipt &&
+        item.status !== "failed" &&
+        typeof item.id === "string",
+    );
+    return match?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Full or partial refund of a captured payment. The idempotency key and the
+ * receipt lookup make a double click or retry return the first refund
+ * instead of failing or refunding twice.
+ */
 export async function refundRazorpayPayment(input: RefundInput, keys: RazorpayKeys, fetchImpl: typeof fetch = fetch): Promise<RefundResult> {
   // payment_ref comes from our database, but it is placed in a URL path, so keep it strict
   if (!/^pay_[A-Za-z0-9]{1,40}$/.test(input.paymentId)) return { ok: false, status: 0 };
-  const auth = Buffer.from(`${keys.keyId}:${keys.keySecret}`).toString("base64");
   try {
     const response = await fetchImpl(`https://api.razorpay.com/v1/payments/${input.paymentId}/refund`, {
       method: "POST",
-      headers: { Authorization: `Basic ${auth}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: basicAuth(keys),
+        "Content-Type": "application/json",
+        "X-Refund-Idempotency": `refund-${input.receipt}`,
+      },
       body: JSON.stringify({ amount: input.amountPaise, receipt: input.receipt }),
       signal: AbortSignal.timeout(15_000),
     });
-    if (!response.ok) return { ok: false, status: response.status };
+    if (!response.ok) {
+      const earlier = response.status === 400 ? await findEarlierRefund(input, keys, fetchImpl) : null;
+      return earlier ? { ok: true, refundId: earlier } : { ok: false, status: response.status };
+    }
     const body: unknown = await response.json();
     const id = typeof body === "object" && body !== null ? (body as { id?: unknown }).id : undefined;
     return typeof id === "string" ? { ok: true, refundId: id } : { ok: false, status: response.status };

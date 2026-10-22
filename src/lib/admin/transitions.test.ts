@@ -19,7 +19,7 @@ describe("transition maps", () => {
   it("mirror the database rules", () => {
     expect(SELL_NEXT.quoted).toEqual(["pickup_assigned", "cancelled"]);
     expect(SELL_NEXT.paid).toEqual([]);
-    expect(STORE_NEXT.shipped).toEqual(["delivered"]);
+    expect(STORE_NEXT.shipped).toEqual(["delivered", "cancelled"]);
     expect(STORE_NEXT.refunded).toEqual([]);
   });
 });
@@ -100,6 +100,8 @@ describe("parseSellInternalForm", () => {
 describe("dbErrorMessage", () => {
   it("translates trigger errors and hides unknown ones", () => {
     expect(dbErrorMessage("tracking_required")).toMatch(/tracking/i);
+    expect(dbErrorMessage("refund_ref_locked")).toMatch(/refund/i);
+    expect(dbErrorMessage("payout_ref_locked")).toMatch(/payout/i);
     expect(dbErrorMessage("permission denied for table orders")).toBe("The order could not be updated. Reload the page and try again.");
   });
 });

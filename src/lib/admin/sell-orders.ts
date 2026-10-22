@@ -14,7 +14,7 @@ import type { SellUpdate } from "./transitions";
 export const SELL_FILTERS = ["open", "quoted", "pickup_assigned", "picked_up", "inspected", "paid", "cancelled", "all"] as const;
 export type SellFilter = (typeof SELL_FILTERS)[number];
 const OPEN: SellStatus[] = ["quoted", "pickup_assigned", "picked_up", "inspected"];
-const LIST_LIMIT = 100;
+export const LIST_LIMIT = 100;
 
 const SUMMARY_SELECT =
   "order_no, status, quoted_price, final_price, pickup_date, pickup_slot, created_at, pickup_address, variant:device_variants(label, device:devices(name, brand:brands(name)))";

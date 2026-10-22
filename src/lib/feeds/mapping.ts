@@ -7,8 +7,8 @@ export type ProductCondition = (typeof PRODUCT_CONDITIONS)[number];
 export const GST_RATES = [0, 3, 5, 12, 18, 28] as const;
 
 const MAX_PRICE = 10_000_000;
-const MAX_STOCK = 100_000;
-const MAX_IMAGES = 8;
+export const MAX_STOCK = 100_000;
+export const MAX_IMAGES = 8;
 
 export const PRODUCT_FIELDS = {
   sku: { label: "Supplier SKU", required: true, aliases: ["sku", "itemcode", "productcode", "code", "partnumber", "itemid", "productid", "modelnumber"] },
@@ -117,7 +117,7 @@ export type MapResult = { ok: true; item: FeedItem } | { ok: false; errors: Fiel
 const roundPaise = (value: number): number => Math.round(value * 100) / 100;
 
 /** "₹1,299.00", "Rs. 1299", "INR 1299" -> 1299 */
-function parseAmount(raw: string): number | null {
+export function parseAmount(raw: string): number | null {
   const cleaned = raw.replace(/₹|rs\.?|inr|,|\s/gi, "");
   if (!/^\d+(\.\d+)?$/.test(cleaned)) return null;
   const value = Number(cleaned);

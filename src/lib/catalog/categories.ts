@@ -18,7 +18,6 @@ export const CATEGORIES_TAG = "categories";
 /** Active categories, cached for an hour. Admin edits call revalidateTag(CATEGORIES_TAG). */
 export async function listCategories(): Promise<Category[]> {
   "use cache";
-  cacheLife("hours");
   cacheTag(CATEGORIES_TAG);
 
   const { data, error } = await createPublicClient()
@@ -28,9 +27,12 @@ export async function listCategories(): Promise<Category[]> {
     .order("sort_order");
 
   if (error) {
+    // Cache the failure only briefly so a DB blip doesn't 404 the catalog for an hour
+    cacheLife("seconds");
     logger.error("Failed to load categories", error);
     return [];
   }
+  cacheLife("hours");
 
   return data.map((row) => ({
     id: row.id,

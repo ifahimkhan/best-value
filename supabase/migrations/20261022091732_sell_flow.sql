@@ -64,7 +64,7 @@ create table public.sell_orders (
 create index sell_orders_user_idx on public.sell_orders (user_id, created_at desc);
 create index sell_orders_status_idx on public.sell_orders (status, pickup_date);
 create trigger sell_orders_updated_at before update on public.sell_orders
-  for each row execute function public.set_updated_at();
+  for each row execute function private.set_updated_at();
 
 -- Staff-only fields live in their own table: RLS is row-level, so any column
 -- on sell_orders would be readable by the customer who owns the row.
@@ -76,4 +76,4 @@ create table public.sell_order_internal (
 );
 create index sell_order_internal_assignee_idx on public.sell_order_internal (assigned_to);
 create trigger sell_order_internal_updated_at before update on public.sell_order_internal
-  for each row execute function public.set_updated_at();
+  for each row execute function private.set_updated_at();

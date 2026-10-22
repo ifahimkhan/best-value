@@ -7,8 +7,18 @@ import { LoginForm } from "./LoginForm";
 export const metadata: Metadata = { title: `Log in | ${BRAND.name}` };
 
 async function LoginContent({ searchParams }: PageProps<"/login">) {
-  const { next } = await searchParams;
-  return <LoginForm next={safeNextPath(typeof next === "string" ? next : null)} />;
+  const { next, error } = await searchParams;
+  return (
+    <>
+      {error === "link" && (
+        <p role="alert" className="mb-4 rounded-lg bg-brand-soft px-3 py-2 text-sm">
+          That sign-in link has expired or was already used. Open it in the same browser you asked for it in, or
+          request a new one below.
+        </p>
+      )}
+      <LoginForm next={safeNextPath(typeof next === "string" ? next : null)} />
+    </>
+  );
 }
 
 export default function LoginPage(props: PageProps<"/login">) {

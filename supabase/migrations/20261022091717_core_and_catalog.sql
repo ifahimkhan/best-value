@@ -3,6 +3,11 @@
 
 create extension if not exists "pgcrypto";
 
+-- Helper functions live in a schema that is NOT exposed through the Data API,
+-- so SECURITY DEFINER functions can't be called directly as RPC endpoints.
+create schema if not exists private;
+grant usage on schema private to anon, authenticated;
+
 -- ---------------------------------------------------------------------------
 -- Users
 -- ---------------------------------------------------------------------------
@@ -35,8 +40,8 @@ create table public.addresses (
 create index addresses_user_idx on public.addresses (user_id);
 
 -- Shared updated_at trigger
-create or replace function public.set_updated_at()
-returns trigger language plpgsql as $$
+create or replace function private.set_updated_at()
+returns trigger language plpgsql set search_path = '' as $$
 begin
   new.updated_at := now();
   return new;
@@ -44,11 +49,11 @@ end;
 $$;
 
 create trigger profiles_updated_at before update on public.profiles
-  for each row execute function public.set_updated_at();
+  for each row execute function private.set_updated_at();
 
 -- Auto-create a profile for every new auth user
-create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer set search_path = public as $$
+create or replace function private.handle_new_user()
+returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   -- auth.users.phone is stored without "+"; profiles use E.164 (+91XXXXXXXXXX)
   insert into public.profiles (id, phone, email)
@@ -62,11 +67,11 @@ end;
 $$;
 
 create trigger on_auth_user_created after insert on auth.users
-  for each row execute function public.handle_new_user();
+  for each row execute function private.handle_new_user();
 
 -- Keep profile email/phone in sync with the verified values in auth.users
-create or replace function public.handle_user_contact_change()
-returns trigger language plpgsql security definer set search_path = public as $$
+create or replace function private.handle_user_contact_change()
+returns trigger language plpgsql security definer set search_path = '' as $$
 begin
   update public.profiles
   set email = new.email,
@@ -77,16 +82,24 @@ end;
 $$;
 
 create trigger on_auth_user_contact_changed after update of email, phone on auth.users
-  for each row execute function public.handle_user_contact_change();
+  for each row execute function private.handle_user_contact_change();
 
--- Role helper used by RLS policies
-create or replace function public.is_staff()
-returns boolean language sql stable security definer set search_path = public as $$
+-- Trigger functions are never called directly
+revoke execute on function private.set_updated_at() from public, anon, authenticated;
+revoke execute on function private.handle_new_user() from public, anon, authenticated;
+revoke execute on function private.handle_user_contact_change() from public, anon, authenticated;
+
+-- Role helper used by RLS policies. SECURITY DEFINER so it can read profiles
+-- without recursing through profiles' own RLS; it only ever answers for the caller.
+create or replace function private.is_staff()
+returns boolean language sql stable security definer set search_path = '' as $$
   select exists (
     select 1 from public.profiles
-    where id = auth.uid() and role in ('staff', 'admin')
+    where id = (select auth.uid()) and role in ('staff', 'admin')
   );
 $$;
+revoke execute on function private.is_staff() from public;
+grant execute on function private.is_staff() to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Catalog: category -> brand -> device (model) -> variant
@@ -129,7 +142,7 @@ create table public.devices (
 create index devices_brand_idx on public.devices (brand_id);
 create index devices_name_search_idx on public.devices using gin (to_tsvector('simple', name));
 create trigger devices_updated_at before update on public.devices
-  for each row execute function public.set_updated_at();
+  for each row execute function private.set_updated_at();
 
 create table public.device_variants (
   id              bigint generated always as identity primary key,

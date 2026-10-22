@@ -64,6 +64,15 @@ async function OrderContent({ orderNo, isNew }: { orderNo: string; isNew: boolea
             <dd>{order.buyerGstin}</dd>
           </>
         )}
+        {order.tracking && (
+          <>
+            <dt className="text-muted">Tracking</dt>
+            <dd>
+              {order.tracking.carrier ? `${order.tracking.carrier} · ` : ""}
+              {order.tracking.number}
+            </dd>
+          </>
+        )}
       </dl>
 
       <div className="mt-6 flex flex-wrap gap-4">

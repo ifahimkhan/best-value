@@ -69,6 +69,29 @@ export function storeEnv(): StoreEnv {
   return parsed.data;
 }
 
+// Optional company contact details for the contact and legal pages. Indian
+// e-commerce rules expect a named grievance officer; the pages show a
+// placeholder until these are set.
+const companySchema = z.object({
+  SUPPORT_PHONE: z.string().regex(/^\+?[0-9 -]{8,16}$/).optional(),
+  GRIEVANCE_OFFICER_NAME: z.string().min(2).max(80).optional(),
+  GRIEVANCE_OFFICER_EMAIL: z.email().optional(),
+});
+
+export type CompanyEnv = z.infer<typeof companySchema>;
+
+export function companyEnv(): CompanyEnv {
+  const parsed = companySchema.safeParse({
+    SUPPORT_PHONE: emptyToUndefined(process.env.SUPPORT_PHONE),
+    GRIEVANCE_OFFICER_NAME: emptyToUndefined(process.env.GRIEVANCE_OFFICER_NAME),
+    GRIEVANCE_OFFICER_EMAIL: emptyToUndefined(process.env.GRIEVANCE_OFFICER_EMAIL),
+  });
+  if (!parsed.success) {
+    throw new Error(`Invalid company environment variables: ${formatIssues(parsed.error)}`);
+  }
+  return parsed.data;
+}
+
 // Shared secret Vercel Cron sends as "Authorization: Bearer <CRON_SECRET>".
 // When unset, the scheduled feed import endpoint refuses every request.
 const cronSchema = z.object({ CRON_SECRET: z.string().min(16).optional() });

@@ -95,6 +95,8 @@ describe("store order rows", () => {
       ...ORDER,
       buyer_gstin: null,
       payment_ref: "pay_1",
+      tracking_carrier: "Delhivery",
+      tracking_number: "DL-12345",
       shipping_address: {
         fullName: "Asha",
         phone: "+919876543210",
@@ -106,7 +108,7 @@ describe("store order rows", () => {
         pincode: "560001",
       },
     });
-    expect(detail).toMatchObject({ gstAmount: 1800, items: [{ unitPrice: 11800, gstRate: 18 }], address: { city: "Bengaluru" } });
+    expect(detail).toMatchObject({ gstAmount: 1800, items: [{ unitPrice: 11800, gstRate: 18 }], address: { city: "Bengaluru" }, tracking: { carrier: "Delhivery", number: "DL-12345" } });
     expect(parseStoreOrderRow({ ...ORDER })).toBeNull();
   });
 });

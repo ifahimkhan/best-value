@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NewsletterForm } from "@/components/content/NewsletterForm";
 import { BRAND } from "@/lib/brand";
 
 const FOOTER_COLUMNS = [
@@ -45,6 +46,9 @@ export function SiteFooter() {
         <div>
           <p className="text-lg font-extrabold">{BRAND.name}</p>
           <p className="mt-2 text-sm text-muted">{BRAND.tagline}</p>
+          <div className="mt-6">
+            <NewsletterForm />
+          </div>
         </div>
         {FOOTER_COLUMNS.map((col) => (
           <div key={col.title}>

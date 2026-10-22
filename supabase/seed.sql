@@ -103,12 +103,12 @@ begin
          (q, '6 to 11 months', 'percent', 6, 3), (q, 'Over 11 months', 'percent', 10, 4);
 end $$;
 
-insert into public.faqs (question, answer, sort_order) values
-  ('How does selling to Best Value work?', 'Choose your device, answer a few questions about its condition and you get an instant price. Book a free pickup and get paid when our agent checks the device.', 1),
-  ('What do I need to keep ready for pickup?', 'A valid government photo ID and the device with any accessories you listed. Remove your screen lock and sign out of iCloud or Google first.', 2),
-  ('How will I receive my money?', 'By UPI, bank transfer or cash, whichever you choose while booking. Payment is made at pickup once the device check is done.', 3),
-  ('Can the final price change?', 'Only if the device condition differs from your answers. Our agent explains any change before you accept.', 4),
-  ('Do products bought from Best Value come with a GST invoice?', 'Yes. Every store order includes a GST invoice, and you can add your GSTIN at checkout.', 5);
+insert into public.faqs (question, answer, sort_order, topic) values
+  ('How does selling to Best Value work?', 'Choose your device, answer a few questions about its condition and you get an instant price. Book a free pickup and get paid when our agent checks the device.', 1, 'selling'),
+  ('What do I need to keep ready for pickup?', 'A valid government photo ID and the device with any accessories you listed. Remove your screen lock and sign out of iCloud or Google first.', 2, 'selling'),
+  ('How will I receive my money?', 'By UPI, bank transfer or cash, whichever you choose while booking. Payment is made at pickup once the device check is done.', 3, 'payments'),
+  ('Can the final price change?', 'Only if the device condition differs from your answers. Our agent explains any change before you accept.', 4, 'selling'),
+  ('Do products bought from Best Value come with a GST invoice?', 'Yes. Every store order includes a GST invoice, and you can add your GSTIN at checkout.', 5, 'buying');
 
 -- Sample store products (placeholders; real stock comes from feeds + admin)
 insert into public.products (sku, title, slug, description, category_id, brand_id, device_variant_id, condition, mrp, price, gst_rate, hsn_code, stock)

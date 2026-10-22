@@ -38,7 +38,7 @@ const DETAIL_SELECT = `${SUMMARY_SELECT}, sku, description, gst_rate, hsn_code, 
 const PRICED_SELECT = "id, sku, title, slug, price, gst_rate, hsn_code, stock, images";
 const ITEMS_SELECT = "items:order_items(sku, title, hsn_code, gst_rate, unit_price, qty)";
 const ORDER_SUMMARY_SELECT = `order_no, status, payment_status, subtotal, gst_amount, shipping_fee, total, created_at, ${ITEMS_SELECT}`;
-const ORDER_DETAIL_SELECT = `${ORDER_SUMMARY_SELECT}, buyer_gstin, payment_ref, shipping_address`;
+const ORDER_DETAIL_SELECT = `${ORDER_SUMMARY_SELECT}, buyer_gstin, payment_ref, tracking_carrier, tracking_number, shipping_address`;
 
 export interface ProductPage {
   items: ProductSummary[];

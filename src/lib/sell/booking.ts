@@ -1,5 +1,12 @@
 import { z } from "zod";
-import { normalizeIndianPhone } from "@/lib/validation/auth";
+import {
+  addressShape,
+  requiredText,
+  toAddress,
+  toFieldErrors,
+  type Address,
+  type FieldErrors,
+} from "@/lib/validation/form";
 import type { Answers } from "./pricing";
 import { PICKUP_SLOTS } from "./slots";
 
@@ -28,17 +35,6 @@ export function parseAnswers(raw: string): Answers | null {
     return null;
   }
 }
-
-const optionalText = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .optional()
-    .transform((v) => (v ? v : null));
-
-const requiredText = (min: number, max: number, label: string) =>
-  z.string().trim().min(min, `Enter ${label}`).max(max, `${label} is too long`);
 
 const payoutSchema = z.discriminatedUnion("payoutMethod", [
   z.object({
@@ -70,18 +66,7 @@ const bookingSchema = z.object({
     if (!answers) ctx.addIssue({ code: "custom", message: "Your answers could not be read. Please start again." });
     return answers ?? {};
   }),
-  fullName: requiredText(2, 80, "your name"),
-  phone: z.string().transform((raw, ctx) => {
-    const phone = normalizeIndianPhone(raw);
-    if (!phone) ctx.addIssue({ code: "custom", message: "Enter a valid 10-digit mobile number" });
-    return phone ?? "";
-  }),
-  line1: requiredText(3, 120, "your house and street"),
-  line2: optionalText(120),
-  landmark: optionalText(80),
-  city: requiredText(2, 60, "your city"),
-  state: requiredText(2, 60, "your state"),
-  pincode: z.string().trim().regex(/^[1-9]\d{5}$/, "Enter a valid 6-digit pincode"),
+  ...addressShape,
   pickupDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a pickup date"),
   pickupSlot: z.enum(PICKUP_SLOTS, "Choose a time slot"),
 });
@@ -97,16 +82,7 @@ export type PayoutSummary =
   | { method: "bank"; accountName: string; accountLast4: string; ifsc: string }
   | { method: "cash" };
 
-export interface PickupAddress {
-  fullName: string;
-  phone: string;
-  line1: string;
-  line2: string | null;
-  landmark: string | null;
-  city: string;
-  state: string;
-  pincode: string;
-}
+export type PickupAddress = Address;
 
 export interface Booking {
   variantId: number;
@@ -118,17 +94,9 @@ export interface Booking {
   payout: Payout;
 }
 
-export type FieldErrors = Partial<Record<string, string>>;
+export type { FieldErrors };
 
 export type BookingParseResult = { success: true; data: Booking } | { success: false; fieldErrors: FieldErrors };
-
-function toFieldErrors(issues: readonly z.core.$ZodIssue[]): FieldErrors {
-  // First message per field wins
-  return issues.reduce<FieldErrors>((acc, issue) => {
-    const key = String(issue.path[0] ?? "form");
-    return acc[key] ? acc : { ...acc, [key]: issue.message };
-  }, {});
-}
 
 function toPayout(p: z.infer<typeof payoutSchema>): Payout {
   if (p.payoutMethod === "upi") return { method: "upi", upiId: p.upiId };
@@ -154,16 +122,7 @@ export function parseBookingForm(input: Record<string, unknown>): BookingParseRe
       variantId: b.variantId,
       expectedPrice: b.expectedPrice,
       answers: b.answers,
-      address: {
-        fullName: b.fullName,
-        phone: b.phone,
-        line1: b.line1,
-        line2: b.line2,
-        landmark: b.landmark,
-        city: b.city,
-        state: b.state,
-        pincode: b.pincode,
-      },
+      address: toAddress(b),
       pickupDate: b.pickupDate,
       pickupSlot: b.pickupSlot,
       payout: toPayout(payout.data),

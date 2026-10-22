@@ -109,3 +109,21 @@ insert into public.faqs (question, answer, sort_order) values
   ('How will I receive my money?', 'By UPI, bank transfer or cash, whichever you choose while booking. Payment is made at pickup once the device check is done.', 3),
   ('Can the final price change?', 'Only if the device condition differs from your answers. Our agent explains any change before you accept.', 4),
   ('Do products bought from Best Value come with a GST invoice?', 'Yes. Every store order includes a GST invoice, and you can add your GSTIN at checkout.', 5);
+
+-- Sample store products (placeholders; real stock comes from feeds + admin)
+insert into public.products (sku, title, slug, description, category_id, brand_id, device_variant_id, condition, mrp, price, gst_rate, hsn_code, stock)
+select v.sku, v.title, v.slug, v.description, c.id, b.id, dv.id, v.condition::public.product_condition, v.mrp, v.price, 18, '8517', v.stock
+from (values
+  ('BV-IP15-128-SUP', 'Apple iPhone 15 (6 GB / 128 GB) Refurbished Superb', 'apple-iphone-15-128gb-superb',
+   'Fully tested, battery health above 90%, no visible marks. Includes a charging cable.', 'phone', 'apple', 'iphone-15', '6-gb-128-gb', 'refurbished_superb', 69900, 52999, 4),
+  ('BV-IP14-128-GD', 'Apple iPhone 14 (6 GB / 128 GB) Refurbished Good', 'apple-iphone-14-128gb-good',
+   'Fully tested. Light signs of use on the frame. Battery health above 85%.', 'phone', 'apple', 'iphone-14', '6-gb-128-gb', 'refurbished_good', 59900, 39999, 6),
+  ('BV-S23-256-SUP', 'Samsung Galaxy S23 (8 GB / 256 GB) Refurbished Superb', 'samsung-galaxy-s23-256gb-superb',
+   'Fully tested, screen in excellent condition, original-quality charger included.', 'phone', 'samsung', 'galaxy-s23', '8-gb-256-gb', 'refurbished_superb', 84999, 41999, 3),
+  ('BV-S23-128-FR', 'Samsung Galaxy S23 (8 GB / 128 GB) Refurbished Fair', 'samsung-galaxy-s23-128gb-fair',
+   'Works perfectly. Visible scratches on the back panel, priced to match.', 'phone', 'samsung', 'galaxy-s23', '8-gb-128-gb', 'refurbished_fair', 74999, 29999, 0)
+) as v(sku, title, slug, description, category_slug, brand_slug, device_slug, variant_slug, condition, mrp, price, stock)
+join public.categories c on c.slug = v.category_slug
+join public.brands b on b.slug = v.brand_slug
+join public.devices d on d.slug = v.device_slug and d.brand_id = b.id
+join public.device_variants dv on dv.device_id = d.id and dv.slug = v.variant_slug;

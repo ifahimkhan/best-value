@@ -1,5 +1,7 @@
 import { Suspense } from "react";
+import { SellOrderList } from "@/components/sell/SellOrderList";
 import { requireUser } from "@/lib/auth/session";
+import { listMySellOrders } from "@/lib/sell/queries";
 
 async function AccountDetails() {
   const user = await requireUser("/account");
@@ -15,6 +17,12 @@ async function AccountDetails() {
   );
 }
 
+async function SellOrders() {
+  await requireUser("/account");
+  const orders = await listMySellOrders();
+  return <SellOrderList orders={orders} />;
+}
+
 export default function AccountPage() {
   return (
     <section className="mx-auto max-w-3xl px-4 py-12">
@@ -22,7 +30,11 @@ export default function AccountPage() {
       <Suspense fallback={<div className="h-32 animate-pulse rounded-xl bg-surface" />}>
         <AccountDetails />
       </Suspense>
-      <p className="mt-6 text-sm text-muted">Your sell requests and store orders will show here.</p>
+      <h2 className="mb-3 mt-10 text-lg font-semibold">My sell requests</h2>
+      <Suspense fallback={<div className="h-24 animate-pulse rounded-xl bg-surface" />}>
+        <SellOrders />
+      </Suspense>
+      <p className="mt-10 text-sm text-muted">Your store orders will show here.</p>
     </section>
   );
 }

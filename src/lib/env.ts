@@ -68,3 +68,15 @@ export function storeEnv(): StoreEnv {
   }
   return parsed.data;
 }
+
+// Shared secret Vercel Cron sends as "Authorization: Bearer <CRON_SECRET>".
+// When unset, the scheduled feed import endpoint refuses every request.
+const cronSchema = z.object({ CRON_SECRET: z.string().min(16).optional() });
+
+export function cronEnv(): z.infer<typeof cronSchema> {
+  const parsed = cronSchema.safeParse({ CRON_SECRET: emptyToUndefined(process.env.CRON_SECRET) });
+  if (!parsed.success) {
+    throw new Error(`Invalid cron environment variables: ${formatIssues(parsed.error)}`);
+  }
+  return parsed.data;
+}

@@ -1,5 +1,6 @@
 import "server-only";
 import { lookup as dnsLookup, type LookupAddress } from "node:dns";
+import type { ClientRequest } from "node:http";
 import { request } from "node:https";
 import type { LookupFunction } from "node:net";
 import { isPrivateAddress, validateFeedUrl } from "./url-safety";
@@ -52,57 +53,79 @@ function fetchOnce(url: URL, options: SafeFetchOptions): Promise<FetchedFile | {
     };
     resolve = settle(resolve);
     reject = settle(reject);
-    const req = request(
-      url,
-      {
-        method: "GET",
-        lookup: guardedLookup,
-        timeout: timeoutMs,
-        headers: { "user-agent": "BestValueFeedImporter/1.0", accept: "*/*" },
-      },
-      (res) => {
-        const status = res.statusCode ?? 0;
-        if (status >= 300 && status < 400 && res.headers.location) {
-          res.resume();
-          resolve({ redirect: new URL(res.headers.location, url).toString() });
-          return;
-        }
-        if (status !== 200) {
-          res.resume();
-          reject(new SafeFetchError(`The server answered with status ${status}.`));
-          return;
-        }
-        const contentType = (res.headers["content-type"] ?? "").toLowerCase();
-        if (options.acceptTypes && !options.acceptTypes.some((type) => contentType.startsWith(type))) {
-          res.resume();
-          reject(new SafeFetchError(`Unexpected content type "${printable(contentType) || "none"}".`));
-          return;
-        }
-        const declared = Number(res.headers["content-length"] ?? 0);
-        if (declared > options.maxBytes) {
-          res.destroy();
-          reject(new SafeFetchError("The file is too large."));
-          return;
-        }
-        const chunks: Buffer[] = [];
-        let size = 0;
-        res.on("data", (chunk: Buffer) => {
-          size += chunk.length;
-          if (size > options.maxBytes) {
-            res.destroy();
-            reject(new SafeFetchError("The file is too large."));
-            return;
-          }
-          chunks.push(chunk);
-        });
-        res.on("end", () => resolve({ body: Buffer.concat(chunks), contentType, finalUrl: url.toString() }));
-        res.on("error", reject);
-      },
-    );
+    // Assigned below; a synchronous throw from request() rejects (and clears the deadline) before it is read
+    let req: ClientRequest;
+    try {
+      req = startRequest(url, options, timeoutMs, resolve, reject);
+    } catch (error) {
+      reject(error);
+      return;
+    }
     req.on("timeout", () => req.destroy(new SafeFetchError("The server took too long to respond.")));
     req.on("error", reject);
     req.end();
   });
+}
+
+function startRequest(
+  url: URL,
+  options: SafeFetchOptions,
+  timeoutMs: number,
+  resolve: (value: FetchedFile | { redirect: string }) => void,
+  reject: (reason: unknown) => void,
+): ClientRequest {
+  return request(
+    url,
+    {
+      method: "GET",
+      lookup: guardedLookup,
+      timeout: timeoutMs,
+      headers: { "user-agent": "BestValueFeedImporter/1.0", accept: "*/*" },
+    },
+    (res) => {
+      const status = res.statusCode ?? 0;
+      if (status >= 300 && status < 400 && res.headers.location) {
+        res.resume();
+        // A throw here would escape the promise and crash the process
+        const target = URL.parse(res.headers.location, url);
+        if (target) resolve({ redirect: target.toString() });
+        else reject(new SafeFetchError("The server sent an invalid redirect."));
+        return;
+      }
+      if (status !== 200) {
+        res.resume();
+        reject(new SafeFetchError(`The server answered with status ${status}.`));
+        return;
+      }
+      const contentType = (res.headers["content-type"] ?? "").toLowerCase();
+      if (options.acceptTypes && !options.acceptTypes.some((type) => contentType.startsWith(type))) {
+        res.resume();
+        reject(new SafeFetchError(`Unexpected content type "${printable(contentType) || "none"}".`));
+        return;
+      }
+      const declared = Number(res.headers["content-length"] ?? 0);
+      if (declared > options.maxBytes) {
+        res.destroy();
+        reject(new SafeFetchError("The file is too large."));
+        return;
+      }
+      const chunks: Buffer[] = [];
+      let size = 0;
+      res.on("data", (chunk: Buffer) => {
+        size += chunk.length;
+        if (size > options.maxBytes) {
+          res.destroy();
+          reject(new SafeFetchError("The file is too large."));
+          return;
+        }
+        chunks.push(chunk);
+      });
+      res.on("end", () => resolve({ body: Buffer.concat(chunks), contentType, finalUrl: url.toString() }));
+      res.on("error", reject);
+      // After "end" this is a no-op; otherwise the body was cut off mid-transfer
+      res.on("close", () => reject(new SafeFetchError("The connection closed before the file finished downloading.")));
+    },
+  );
 }
 
 /** Downloads an https URL with SSRF guards, a size cap, a timeout and re-validated redirects. */

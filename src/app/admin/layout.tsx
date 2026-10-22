@@ -10,6 +10,7 @@ const ADMIN_NAV = [
   { href: "/admin/products", label: "Products" },
   { href: "/admin/suppliers", label: "Supplier feeds" },
   { href: "/admin/pricing", label: "Price questions" },
+  { href: "/admin/messages", label: "Messages" },
 ] as const;
 
 // UI gate only. Layouts don't re-run on client navigation and server actions /

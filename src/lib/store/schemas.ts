@@ -166,6 +166,8 @@ const orderRowSchema = z.object({
 const orderDetailRowSchema = orderRowSchema.extend({
   buyer_gstin: z.string().nullable(),
   payment_ref: z.string().nullable(),
+  tracking_carrier: z.string().nullable(),
+  tracking_number: z.string().nullable(),
   shipping_address: z.object({
     fullName: z.string(),
     phone: z.string(),
@@ -204,6 +206,8 @@ export interface StoreOrderDetail extends StoreOrderSummary {
   buyerGstin: string | null;
   paymentRef: string | null;
   address: Address;
+  /** Set once the order ships. */
+  tracking: { carrier: string | null; number: string } | null;
 }
 
 function toOrderSummary(r: z.infer<typeof orderRowSchema>): StoreOrderSummary {
@@ -237,5 +241,6 @@ export function parseStoreOrderRow(row: unknown): StoreOrderDetail | null {
   const parsed = orderDetailRowSchema.safeParse(row);
   if (!parsed.success) return null;
   const r = parsed.data;
-  return { ...toOrderSummary(r), buyerGstin: r.buyer_gstin, paymentRef: r.payment_ref, address: r.shipping_address };
+  const tracking = r.tracking_number ? { carrier: r.tracking_carrier ?? null, number: r.tracking_number } : null;
+  return { ...toOrderSummary(r), buyerGstin: r.buyer_gstin, paymentRef: r.payment_ref, address: r.shipping_address, tracking };
 }

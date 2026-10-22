@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { BRAND } from "@/lib/brand";
 import { AuthSlot } from "./AuthSlot";
 import { CartSlot } from "./CartSlot";
+import { Logo } from "./Logo";
 
 const NAV_LINKS = [
   { href: "/sell", label: "Sell" },
@@ -15,9 +15,8 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
-        <Link href="/" className="flex items-center gap-2 text-lg font-extrabold tracking-tight">
-          <span className="grid size-8 place-items-center rounded-lg bg-brand text-sm text-brand-contrast">BV</span>
-          {BRAND.name}
+        <Link href="/" className="flex items-center pt-2 text-2xl">
+          <Logo />
         </Link>
 
         <form action="/search" className="hidden flex-1 md:block">

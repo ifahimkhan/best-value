@@ -1,33 +1,37 @@
 @import "tailwindcss";
 
-/* Best Value design tokens */
+/* Best Value design tokens: black and gold, a single dark theme to match the brand mark */
 :root {
-  --background: #f7f8f6;
-  --surface: #ffffff;
-  --foreground: #14211b;
-  --muted: #5b6b63;
-  --border: #dde3df;
-  --brand: #0f7a4d;
-  --brand-strong: #0b5f3c;
-  --brand-soft: #e3f3ea;
-  --brand-contrast: #ffffff;
-  --accent: #f2a516;
-  --danger: #c0392b;
+  color-scheme: dark;
+  --background: #0a0a0a;
+  --surface: #141311;
+  --foreground: #f3ede0;
+  --muted: #a8a193;
+  --border: #2d2922;
+  --brand: #c9a24a;
+  --brand-strong: #e0bd6a;
+  --brand-soft: #241e12;
+  --brand-contrast: #0a0a0a;
+  --accent: #e8c873;
+  --danger: #f07a6c;
+  --gold-gradient: linear-gradient(180deg, #f6e3a6 0%, #d9b45e 45%, #a8822f 75%, #e6c878 100%);
 }
 
-@media (prefers-color-scheme: dark) {
+/* Invoices and order pages print as black on white */
+@media print {
   :root {
-    --background: #0d1411;
-    --surface: #152019;
-    --foreground: #e8efea;
-    --muted: #9aaba2;
-    --border: #26342c;
-    --brand: #2fb57a;
-    --brand-strong: #46c78d;
-    --brand-soft: #173326;
-    --brand-contrast: #06120c;
-    --accent: #f5b83d;
-    --danger: #ef6f61;
+    color-scheme: light;
+    --background: #ffffff;
+    --surface: #ffffff;
+    --foreground: #111111;
+    --muted: #555555;
+    --border: #cccccc;
+    --brand: #6b5420;
+    --brand-strong: #4f3e17;
+    --brand-soft: #f5efe0;
+    --brand-contrast: #ffffff;
+    --accent: #6b5420;
+    --danger: #a5281b;
   }
 }
 
@@ -45,9 +49,46 @@
   --color-danger: var(--danger);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-playfair);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* Page titles use the serif display face of the wordmark */
+@layer base {
+  h1 {
+    font-family: var(--font-display);
+  }
+}
+
+/* Soft gold light behind the home hero */
+.hero-glow {
+  background:
+    radial-gradient(ellipse 60% 80% at 85% 20%, rgb(201 162 74 / 0.18), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 0% 100%, rgb(201 162 74 / 0.08), transparent 70%),
+    var(--background);
+}
+
+@media print {
+  .hero-glow {
+    background: none;
+  }
+}
+
+/* Metallic gold text for the wordmark and display headings */
+.text-gold {
+  background-image: var(--gold-gradient);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+@media print {
+  .text-gold {
+    background: none;
+    color: var(--brand);
+  }
 }

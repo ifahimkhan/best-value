@@ -46,7 +46,7 @@ create index products_category_idx on public.products (category_id) where is_act
 create index products_brand_idx on public.products (brand_id) where is_active;
 create index products_search_idx on public.products using gin (to_tsvector('simple', title));
 create trigger products_updated_at before update on public.products
-  for each row execute function public.set_updated_at();
+  for each row execute function private.set_updated_at();
 
 create type public.import_status as enum ('running', 'succeeded', 'partial', 'failed');
 
@@ -89,7 +89,7 @@ create table public.orders (
 );
 create index orders_user_idx on public.orders (user_id, created_at desc);
 create trigger orders_updated_at before update on public.orders
-  for each row execute function public.set_updated_at();
+  for each row execute function private.set_updated_at();
 
 create table public.order_items (
   id          bigint generated always as identity primary key,

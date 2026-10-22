@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { publicEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
 import { otpSchema, parseLoginIdentifier, safeNextPath } from "@/lib/validation/auth";
@@ -15,6 +16,22 @@ export interface LoginState {
 
 const GENERIC_ERROR = "Something went wrong. Please try again in a minute.";
 
+function sendErrorMessage(status: number | undefined, code: string | undefined): string {
+  if (status === 429 || code === "over_email_send_rate_limit" || code === "over_sms_send_rate_limit") {
+    return "Too many attempts. Please wait a few minutes and try again.";
+  }
+  if (code === "phone_provider_disabled" || code === "sms_send_failed") {
+    return "Login by mobile number isn't available yet. Please use your email instead.";
+  }
+  return GENERIC_ERROR;
+}
+
+function emailCallbackUrl(next: FormDataEntryValue | null): string {
+  const url = new URL("/auth/callback", publicEnv().NEXT_PUBLIC_SITE_URL);
+  url.searchParams.set("next", safeNextPath(typeof next === "string" ? next : null));
+  return url.toString();
+}
+
 export async function sendOtp(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const raw = String(formData.get("identifier") ?? "");
   const parsed = parseLoginIdentifier(raw);
@@ -26,16 +43,22 @@ export async function sendOtp(_prev: LoginState, formData: FormData): Promise<Lo
   const { error } =
     parsed.kind === "phone"
       ? await supabase.auth.signInWithOtp({ phone: parsed.value })
-      : await supabase.auth.signInWithOtp({ email: parsed.value, options: { shouldCreateUser: true } });
+      : await supabase.auth.signInWithOtp({
+          email: parsed.value,
+          // Default Supabase email templates send a link, custom ones send a code: support both
+          options: { shouldCreateUser: true, emailRedirectTo: emailCallbackUrl(formData.get("next")) },
+        });
 
   if (error) {
-    logger.error("OTP send failed", error, { kind: parsed.kind, status: error.status });
-    const message = error.status === 429 ? "Too many attempts. Please wait a minute and try again." : GENERIC_ERROR;
-    return { step: "identify", identifier: raw, error: message };
+    logger.error("OTP send failed", error, { kind: parsed.kind, status: error.status, code: error.code });
+    return { step: "identify", identifier: raw, error: sendErrorMessage(error.status, error.code) };
   }
 
-  const where = parsed.kind === "phone" ? "your phone by SMS" : "your email";
-  return { step: "verify", identifier: parsed.value, kind: parsed.kind, info: `We sent a 6-digit code to ${where}.` };
+  const info =
+    parsed.kind === "phone"
+      ? "We sent a 6-digit code to your phone by SMS."
+      : "Check your email (and spam folder). Enter the 6-digit code, or just tap the sign-in link in the email.";
+  return { step: "verify", identifier: parsed.value, kind: parsed.kind, info };
 }
 
 export async function verifyOtp(prev: LoginState, formData: FormData): Promise<LoginState> {

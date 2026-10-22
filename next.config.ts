@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { securityHeaders } from "./src/lib/security/headers";
 
 // Only allow images from OUR Supabase project's public storage, not any
 // *.supabase.co host, so /_next/image can't be used as a free resizing proxy.
@@ -14,9 +15,17 @@ function supabaseImageHost(): string | null {
 
 const imageHost = supabaseImageHost();
 
+const headers = securityHeaders({
+  isDev: process.env.NODE_ENV === "development",
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+});
+
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
+  poweredByHeader: false,
+  async headers() {
+    return [{ source: "/:path*", headers }];
+  },
   partialPrefetching: true,
   experimental: {
     // Supplier feed uploads (4 MB cap in the action) plus multipart overhead; Vercel caps bodies at ~4.5 MB

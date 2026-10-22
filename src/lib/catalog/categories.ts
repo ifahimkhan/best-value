@@ -1,5 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
+import { z } from "zod";
 import { createPublicClient } from "@/lib/supabase/public";
 import { logger } from "@/lib/logger";
 
@@ -14,6 +15,38 @@ export interface Category {
 }
 
 export const CATEGORIES_TAG = "categories";
+
+const categoryRowSchema = z
+  .object({
+    id: z.number(),
+    name: z.string(),
+    slug: z.string(),
+    icon_url: z.string().nullable(),
+    can_sell: z.boolean(),
+    can_buy: z.boolean(),
+    coming_soon: z.boolean(),
+  })
+  .transform((row) => ({
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    iconUrl: row.icon_url,
+    canSell: row.can_sell,
+    canBuy: row.can_buy,
+    comingSoon: row.coming_soon,
+  }));
+
+/** Rows are external data: malformed ones are dropped and logged. */
+export function parseCategoryRows(rows: unknown): Category[] {
+  if (!Array.isArray(rows)) return [];
+  return rows.flatMap((row) => {
+    const parsed = categoryRowSchema.safeParse(row);
+    if (parsed.success) return [parsed.data];
+    const id = typeof row === "object" && row !== null && "id" in row ? row.id : null;
+    logger.warn("Dropped malformed category row", { id, issues: parsed.error.issues.length });
+    return [];
+  });
+}
 
 /** Active categories, cached for an hour. Admin edits call revalidateTag(CATEGORIES_TAG). */
 export async function listCategories(): Promise<Category[]> {
@@ -32,15 +65,10 @@ export async function listCategories(): Promise<Category[]> {
     logger.error("Failed to load categories", error);
     return [];
   }
-  cacheLife("hours");
-
-  return data.map((row) => ({
-    id: row.id,
-    name: row.name,
-    slug: row.slug,
-    iconUrl: row.icon_url,
-    canSell: row.can_sell,
-    canBuy: row.can_buy,
-    comingSoon: row.coming_soon,
-  }));
+  const categories = parseCategoryRows(data);
+  // A partial list (bad rows dropped) is only cached briefly, like an error
+  const complete = Array.isArray(data) && categories.length === data.length;
+  if (complete) cacheLife("hours");
+  else cacheLife("seconds");
+  return categories;
 }

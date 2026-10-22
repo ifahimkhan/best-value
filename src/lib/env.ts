@@ -36,3 +36,35 @@ export function serverEnv() {
   }
   return parsed.data;
 }
+
+// Optional store settings. Online payment stays switched off until all three
+// Razorpay values are set; invoices omit seller details that are not set.
+const storeSchema = z.object({
+  RAZORPAY_KEY_ID: z.string().min(1).optional(),
+  RAZORPAY_KEY_SECRET: z.string().min(1).optional(),
+  RAZORPAY_WEBHOOK_SECRET: z.string().min(1).optional(),
+  SELLER_LEGAL_NAME: z.string().min(1).optional(),
+  SELLER_GSTIN: z.string().min(1).optional(),
+  SELLER_ADDRESS: z.string().min(1).optional(),
+  SELLER_STATE: z.string().min(1).optional(),
+});
+
+export type StoreEnv = z.infer<typeof storeSchema>;
+
+const emptyToUndefined = (value: string | undefined) => (value && value.trim() ? value.trim() : undefined);
+
+export function storeEnv(): StoreEnv {
+  const parsed = storeSchema.safeParse({
+    RAZORPAY_KEY_ID: emptyToUndefined(process.env.RAZORPAY_KEY_ID),
+    RAZORPAY_KEY_SECRET: emptyToUndefined(process.env.RAZORPAY_KEY_SECRET),
+    RAZORPAY_WEBHOOK_SECRET: emptyToUndefined(process.env.RAZORPAY_WEBHOOK_SECRET),
+    SELLER_LEGAL_NAME: emptyToUndefined(process.env.SELLER_LEGAL_NAME),
+    SELLER_GSTIN: emptyToUndefined(process.env.SELLER_GSTIN),
+    SELLER_ADDRESS: emptyToUndefined(process.env.SELLER_ADDRESS),
+    SELLER_STATE: emptyToUndefined(process.env.SELLER_STATE),
+  });
+  if (!parsed.success) {
+    throw new Error(`Invalid store environment variables: ${formatIssues(parsed.error)}`);
+  }
+  return parsed.data;
+}

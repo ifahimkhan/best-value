@@ -14,9 +14,9 @@ const FOOTER_COLUMNS = [
   {
     title: "Shop",
     links: [
-      { href: "/shop/phone", label: "Phones" },
-      { href: "/shop/tablet", label: "Tablets" },
-      { href: "/shop/smartwatch", label: "Smartwatches" },
+      { href: "/shop?category=phone", label: "Phones" },
+      { href: "/shop?category=tablet", label: "Tablets" },
+      { href: "/shop?category=smartwatch", label: "Smartwatches" },
       { href: "/shop", label: "All products" },
     ],
   },

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { BRAND } from "@/lib/brand";
 import { AuthSlot } from "./AuthSlot";
+import { CartSlot } from "./CartSlot";
 
 const NAV_LINKS = [
   { href: "/sell", label: "Sell" },
@@ -35,6 +36,10 @@ export function SiteHeader() {
             </Link>
           ))}
         </nav>
+
+        <Suspense fallback={<span className="text-sm font-medium">Cart</span>}>
+          <CartSlot />
+        </Suspense>
 
         <Suspense fallback={<div className="h-9 w-20" />}>
           <AuthSlot />

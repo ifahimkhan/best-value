@@ -170,7 +170,7 @@ export async function cancelStoreOrder(orderNo: string): Promise<void> {
   if (error) logger.error("Failed to cancel store order", error, { orderNo });
 }
 
-const markPaidSchema = z.enum(["paid", "already_paid", "needs_refund", "amount_mismatch", "not_found"]);
+const markPaidSchema = z.enum(["paid", "already_paid", "already_refunded", "needs_refund", "amount_mismatch", "not_found"]);
 export type MarkPaidResult = z.infer<typeof markPaidSchema> | "error";
 
 export async function markStoreOrderPaid(gatewayOrderId: string, paymentId: string, amountPaise: number): Promise<MarkPaidResult> {
@@ -189,7 +189,7 @@ export async function markStoreOrderPaid(gatewayOrderId: string, paymentId: stri
     return "error";
   }
   const result = parsed.data;
-  if (result === "needs_refund" || result === "amount_mismatch") {
+  if (result === "needs_refund" || result === "amount_mismatch" || result === "already_refunded") {
     logger.warn("Store payment needs staff attention", { gatewayOrderId, result });
   }
   return result;

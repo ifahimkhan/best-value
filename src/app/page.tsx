@@ -1,69 +1,106 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Suspense } from "react";
+import { listCategories } from "@/lib/catalog/categories";
 
-export default function Home() {
+const SELL_STEPS = [
+  { title: "Get your price", body: "Pick your device and answer a few quick questions about its condition." },
+  { title: "Book a free pickup", body: "Choose a date and time slot. We come to your home or office." },
+  { title: "Get paid on the spot", body: "Once our agent checks the device, you're paid by UPI, bank transfer or cash." },
+] as const;
+
+const REASONS = [
+  { title: "Fair, upfront quotes", body: "Your price is worked out from clear rules, so you know why you got it." },
+  { title: "Paid at pickup", body: "No waiting for days. Money arrives before our agent leaves." },
+  { title: "GST invoices", body: "Every purchase and every buyback comes with proper paperwork." },
+  { title: "Checked devices", body: "Store devices are tested and graded before they're listed." },
+] as const;
+
+async function CategoryGrid() {
+  const categories = await listCategories();
+  if (categories.length === 0) {
+    return <p className="text-muted">Categories will appear here once the catalog is loaded.</p>;
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {categories.map((cat) => (
+        <li key={cat.id}>
+          {cat.comingSoon ? (
+            <div className="rounded-xl border border-dashed border-border bg-surface p-4 opacity-70">
+              <p className="font-semibold">{cat.name}</p>
+              <p className="text-xs text-muted">Coming soon</p>
+            </div>
+          ) : (
+            <Link
+              href={`/sell/${cat.slug}`}
+              className="block rounded-xl border border-border bg-surface p-4 transition hover:border-brand hover:shadow-sm"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <p className="font-semibold">{cat.name}</p>
+              <p className="text-xs text-muted">Sell or buy</p>
+            </Link>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <>
+      <section className="bg-brand-soft">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-16 md:grid-cols-2 md:items-center">
+          <div>
+            <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl">
+              Your old phone is worth more than you think.
+            </h1>
+            <p className="mt-4 text-lg text-muted">
+              Get an instant quote, free doorstep pickup and same-day payment. Or pick up a checked,
+              graded device for less than new.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/sell" className="rounded-lg bg-brand px-6 py-3 font-semibold text-brand-contrast hover:bg-brand-strong">
+                Sell a device
+              </Link>
+              <Link href="/shop" className="rounded-lg border border-brand px-6 py-3 font-semibold text-brand hover:bg-surface">
+                Shop devices
+              </Link>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      <section id="categories" className="mx-auto max-w-6xl px-4 py-12">
+        <h2 className="mb-6 text-2xl font-bold">What would you like to sell or buy?</h2>
+        <Suspense fallback={<div className="h-32 animate-pulse rounded-xl bg-surface" />}>
+          <CategoryGrid />
+        </Suspense>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-12">
+        <h2 className="mb-6 text-2xl font-bold">Selling takes three steps</h2>
+        <ol className="grid gap-4 md:grid-cols-3">
+          {SELL_STEPS.map((step, i) => (
+            <li key={step.title} className="rounded-xl border border-border bg-surface p-5">
+              <span className="text-sm font-bold text-brand">Step {i + 1}</span>
+              <p className="mt-1 font-semibold">{step.title}</p>
+              <p className="mt-1 text-sm text-muted">{step.body}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-12">
+        <h2 className="mb-6 text-2xl font-bold">Why people choose Best Value</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {REASONS.map((r) => (
+            <div key={r.title} className="rounded-xl bg-surface p-5">
+              <p className="font-semibold">{r.title}</p>
+              <p className="mt-1 text-sm text-muted">{r.body}</p>
+            </div>
+          ))}
         </div>
-      </main>
-    </div>
+      </section>
+    </>
   );
 }

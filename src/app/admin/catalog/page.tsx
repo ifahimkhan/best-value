@@ -55,7 +55,9 @@ async function DeviceList({ params }: { params: DeviceListParams }) {
         {items.map((d) => (
           <li key={d.id} className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center">
             <span className="min-w-0 lg:w-56 lg:shrink-0">
-              <span className="block truncate font-medium">{d.name}</span>
+              <Link href={`/admin/catalog/${d.id}`} className="block truncate font-medium hover:text-brand hover:underline">
+                {d.name}
+              </Link>
               <span className="block text-xs text-muted">
                 {d.brandName} · {d.categoryName}
                 {d.hasPlaceholder && " · placeholder"}
@@ -83,9 +85,14 @@ export default function AdminCatalogPage({ searchParams }: PageProps<"/admin/cat
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Device catalog</h1>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold">Device catalog</h1>
+          <Link href="/admin/catalog/new" className="rounded-lg bg-brand px-5 py-2 font-semibold text-brand-contrast">
+            Add device
+          </Link>
+        </div>
         <p className="mt-1 text-sm text-muted">
-          Replace placeholder photos. Uploads are fitted into a 192 × 192 square and compressed to 20 KB or less. A clear photo on a plain
+          Open a device to change its buy prices. Replace placeholder photos here. Uploads are fitted into a 192 × 192 square and compressed to 20 KB or less. A clear photo on a plain
           background works best.
         </p>
       </div>

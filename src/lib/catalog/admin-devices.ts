@@ -13,7 +13,7 @@ import { escapeLike } from "./search";
 // row is updated through the signed-in client so RLS applies too; only the
 // storage upload uses the service-role client, as storage has no staff policy.
 
-const PLACEHOLDER_DIR = "catalog/placeholders/";
+export const PLACEHOLDER_DIR = "catalog/placeholders/";
 const UPLOAD_DIR = "catalog/devices/";
 
 const LIST_SELECT = "id, name, image_url, is_active, brand:brands!inner(name, slug), category:categories!inner(name, slug)";

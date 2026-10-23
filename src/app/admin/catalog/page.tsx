@@ -3,16 +3,34 @@ import { Suspense } from "react";
 import { DeviceImageForm } from "@/components/admin/catalog/DeviceImageForm";
 import { requireAdmin } from "@/lib/auth/session";
 import { DEVICE_PAGE_SIZE, deviceListHref, parseDeviceListParams, type DeviceListParams } from "@/lib/catalog/admin-device-list";
-import { listAdminDevices } from "@/lib/catalog/admin-devices";
+import { listAdminBrands, listAdminCategories, listAdminDevices } from "@/lib/catalog/admin-devices";
 
 export const metadata = { title: "Device catalog", robots: { index: false } };
 
 const FILTER_CLASS = "rounded-lg border border-border bg-surface px-3 py-2 text-sm";
 
-function Filters({ params }: { params: DeviceListParams }) {
+async function Filters({ params }: { params: DeviceListParams }) {
+  await requireAdmin();
+  const [categories, brands] = await Promise.all([listAdminCategories(), listAdminBrands()]);
   return (
     <form action="/admin/catalog" className="flex flex-wrap gap-2">
       <input name="q" type="search" defaultValue={params.q ?? ""} placeholder="Search device name" className={`${FILTER_CLASS} min-w-56 flex-1`} />
+      <select name="category" defaultValue={params.category ?? ""} className={FILTER_CLASS} aria-label="Category">
+        <option value="">All categories</option>
+        {categories.map((c) => (
+          <option key={c.slug} value={c.slug}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+      <select name="brand" defaultValue={params.brand ?? ""} className={FILTER_CLASS} aria-label="Brand">
+        <option value="">All brands</option>
+        {brands.map((b) => (
+          <option key={b.slug} value={b.slug}>
+            {b.name}
+          </option>
+        ))}
+      </select>
       <select name="image" defaultValue={params.image} className={FILTER_CLASS} aria-label="Photo">
         <option value="placeholder">Placeholder photo</option>
         <option value="custom">Uploaded here</option>
@@ -37,7 +55,9 @@ async function DeviceList({ params }: { params: DeviceListParams }) {
         {items.map((d) => (
           <li key={d.id} className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center">
             <span className="min-w-0 lg:w-56 lg:shrink-0">
-              <span className="block truncate font-medium">{d.name}</span>
+              <Link href={`/admin/catalog/${d.id}`} className="block truncate font-medium hover:text-brand hover:underline">
+                {d.name}
+              </Link>
               <span className="block text-xs text-muted">
                 {d.brandName} · {d.categoryName}
                 {d.hasPlaceholder && " · placeholder"}
@@ -65,9 +85,14 @@ export default function AdminCatalogPage({ searchParams }: PageProps<"/admin/cat
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Device catalog</h1>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold">Device catalog</h1>
+          <Link href="/admin/catalog/new" className="rounded-lg bg-brand px-5 py-2 font-semibold text-brand-contrast">
+            Add device
+          </Link>
+        </div>
         <p className="mt-1 text-sm text-muted">
-          Replace placeholder photos. Uploads are fitted into a 192 × 192 square and compressed to 20 KB or less. A clear photo on a plain
+          Open a device to change its buy prices. Replace placeholder photos here. Uploads are fitted into a 192 × 192 square and compressed to 20 KB or less. A clear photo on a plain
           background works best.
         </p>
       </div>

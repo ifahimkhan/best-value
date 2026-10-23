@@ -13,10 +13,10 @@ import { escapeLike } from "./search";
 // row is updated through the signed-in client so RLS applies too; only the
 // storage upload uses the service-role client, as storage has no staff policy.
 
-const PLACEHOLDER_DIR = "catalog/placeholders/";
+export const PLACEHOLDER_DIR = "catalog/placeholders/";
 const UPLOAD_DIR = "catalog/devices/";
 
-const LIST_SELECT = "id, name, image_url, is_active, brand:brands!inner(name), category:categories!inner(name)";
+const LIST_SELECT = "id, name, image_url, is_active, brand:brands!inner(name, slug), category:categories!inner(name, slug)";
 
 const listRow = z.object({
   id: z.number(),
@@ -26,6 +26,32 @@ const listRow = z.object({
   brand: z.object({ name: z.string() }),
   category: z.object({ name: z.string() }),
 });
+
+const optionRow = z.object({ name: z.string(), slug: z.string() });
+
+export type AdminFilterOption = z.infer<typeof optionRow>;
+
+// Signed-in client: RLS shows staff the hidden brands and categories too
+async function listOptions(table: "brands" | "categories", orderBy: string): Promise<AdminFilterOption[]> {
+  const db = await createClient();
+  const { data, error } = await db.from(table).select("name, slug").order(orderBy);
+  if (error) {
+    logger.error(`Loading ${table} filter options failed`, error);
+    return [];
+  }
+  const rows = z.array(optionRow).safeParse(data);
+  if (!rows.success) {
+    logger.error(`Unexpected ${table} filter rows`, rows.error);
+    return [];
+  }
+  return rows.data;
+}
+
+/** Every brand, hidden ones included, for the catalog filter. */
+export const listAdminBrands = (): Promise<AdminFilterOption[]> => listOptions("brands", "name");
+
+/** Every category in site order, for the catalog filter. */
+export const listAdminCategories = (): Promise<AdminFilterOption[]> => listOptions("categories", "sort_order");
 
 export interface AdminDeviceRow {
   id: number;
@@ -46,6 +72,8 @@ export async function listAdminDevices(params: DeviceListParams): Promise<{ item
   const from = (params.page - 1) * DEVICE_PAGE_SIZE;
   let query = db.from("devices").select(LIST_SELECT, { count: "exact" });
   if (params.q) query = query.ilike("name", `%${escapeLike(params.q)}%`);
+  if (params.category) query = query.eq("category.slug", params.category);
+  if (params.brand) query = query.eq("brand.slug", params.brand);
   if (params.image === "placeholder") query = query.or(`image_url.is.null,image_url.like.*/${PLACEHOLDER_DIR}*`);
   if (params.image === "custom") query = query.like("image_url", `%/${UPLOAD_DIR}%`);
   const { data, error, count } = await query.order("name").order("id").range(from, from + DEVICE_PAGE_SIZE - 1);

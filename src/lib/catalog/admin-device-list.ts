@@ -11,6 +11,8 @@ export interface DeviceListParams {
   q: string | null;
   /** Brand slug, or null for every brand. */
   brand: string | null;
+  /** Category slug, or null for every category. */
+  category: string | null;
   image: (typeof IMAGE_FILTERS)[number];
   page: number;
 }
@@ -19,13 +21,15 @@ type RawParams = Record<string, string | string[] | undefined>;
 
 const single = (value: string | string[] | undefined): string | undefined => (typeof value === "string" ? value : undefined);
 
+const slugOrNull = (value: string | undefined): string | null => (value && isValidSlug(value) ? value : null);
+
 /** Defaults to devices still showing a placeholder, since those are the ones that need a photo. */
 export function parseDeviceListParams(raw: RawParams): DeviceListParams {
   const page = Number(single(raw.page));
-  const brand = single(raw.brand);
   return {
     q: normalizeQuery(single(raw.q)),
-    brand: brand && isValidSlug(brand) ? brand : null,
+    brand: slugOrNull(single(raw.brand)),
+    category: slugOrNull(single(raw.category)),
     image: IMAGE_FILTERS.find((option) => option === single(raw.image)) ?? IMAGE_FILTERS[0],
     page: Number.isInteger(page) && page > 1 && page <= 10_000 ? page : 1,
   };
@@ -35,6 +39,7 @@ export function deviceListHref(current: DeviceListParams, changes: Partial<Devic
   const next = { ...current, ...changes };
   const params = new URLSearchParams();
   if (next.q) params.set("q", next.q);
+  if (next.category) params.set("category", next.category);
   if (next.brand) params.set("brand", next.brand);
   if (next.image !== IMAGE_FILTERS[0]) params.set("image", next.image);
   if (next.page > 1) params.set("page", String(next.page));

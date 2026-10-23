@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { DeviceImageForm } from "@/components/admin/catalog/DeviceImageForm";
 import { requireAdmin } from "@/lib/auth/session";
 import { DEVICE_PAGE_SIZE, deviceListHref, parseDeviceListParams, type DeviceListParams } from "@/lib/catalog/admin-device-list";
-import { listAdminBrands, listAdminDevices } from "@/lib/catalog/admin-devices";
+import { listAdminBrands, listAdminCategories, listAdminDevices } from "@/lib/catalog/admin-devices";
 
 export const metadata = { title: "Device catalog", robots: { index: false } };
 
@@ -11,10 +11,18 @@ const FILTER_CLASS = "rounded-lg border border-border bg-surface px-3 py-2 text-
 
 async function Filters({ params }: { params: DeviceListParams }) {
   await requireAdmin();
-  const brands = await listAdminBrands();
+  const [categories, brands] = await Promise.all([listAdminCategories(), listAdminBrands()]);
   return (
     <form action="/admin/catalog" className="flex flex-wrap gap-2">
       <input name="q" type="search" defaultValue={params.q ?? ""} placeholder="Search device name" className={`${FILTER_CLASS} min-w-56 flex-1`} />
+      <select name="category" defaultValue={params.category ?? ""} className={FILTER_CLASS} aria-label="Category">
+        <option value="">All categories</option>
+        {categories.map((c) => (
+          <option key={c.slug} value={c.slug}>
+            {c.name}
+          </option>
+        ))}
+      </select>
       <select name="brand" defaultValue={params.brand ?? ""} className={FILTER_CLASS} aria-label="Brand">
         <option value="">All brands</option>
         {brands.map((b) => (

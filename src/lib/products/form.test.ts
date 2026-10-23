@@ -78,6 +78,13 @@ describe("parseProductForm", () => {
     );
   });
 
+  it("keeps device photos shared onto the product, but not other catalog files", () => {
+    const shared = `${IMAGE_PREFIX}catalog/devices/7/0f8e4c2a-1b3d-4e5f-8a9b-0c1d2e3f4a5b.webp`;
+    const data = form([...VALID, ["image", shared], ["image", `${IMAGE_PREFIX}catalog/placeholders/phone.png`]]);
+    const result = parseProductForm(data, IMAGE_PREFIX);
+    expect(result.ok && result.data.images).toEqual([`${IMAGE_PREFIX}manual/a.jpg`, `${IMAGE_PREFIX}manual/b.png`, shared]);
+  });
+
   it("drops images that are not in our storage bucket", () => {
     const data = form([...VALID, ["image", "https://evil.example.com/x.jpg"], ["image", `${IMAGE_PREFIX}../../x`]]);
     const result = parseProductForm(data, IMAGE_PREFIX);

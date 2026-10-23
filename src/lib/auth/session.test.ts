@@ -16,7 +16,7 @@ vi.mock("next/navigation", () => ({ redirect: mocks.redirect, notFound: mocks.no
 vi.mock("@/lib/logger", () => ({ logger: { error: mocks.logError, warn: vi.fn(), info: vi.fn() } }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => fake.client }));
 
-const { getSessionUser, requireStaff, requireUser } = await import("./session");
+const { getSessionUser, requireAdmin, requireStaff, requireUser } = await import("./session");
 const { callArgs } = await import("@/test/fake-supabase");
 
 interface AuthStub {
@@ -117,6 +117,23 @@ describe("requireStaff", () => {
   it.each(["staff", "admin"])("allows the %s role", async (role) => {
     signIn(role);
     await expect(requireStaff()).resolves.toMatchObject({ role });
+    expect(mocks.notFound).not.toHaveBeenCalled();
+  });
+});
+
+describe("requireAdmin", () => {
+  it("redirects signed-out visitors to login with the admin path", async () => {
+    await expect(requireAdmin()).rejects.toThrow("REDIRECT:/login?next=%2Fadmin");
+  });
+
+  it.each(["customer", "staff"])("answers not found for the %s role", async (role) => {
+    signIn(role);
+    await expect(requireAdmin()).rejects.toThrow("NOT_FOUND");
+  });
+
+  it("allows admins", async () => {
+    signIn("admin");
+    await expect(requireAdmin()).resolves.toMatchObject({ role: "admin" });
     expect(mocks.notFound).not.toHaveBeenCalled();
   });
 });

@@ -52,3 +52,10 @@ export async function requireStaff(): Promise<SessionUser> {
   if (user.role !== "staff" && user.role !== "admin") notFound();
   return user;
 }
+
+/** Admin-only areas (catalog photos). Staff get the same 404 as customers. */
+export async function requireAdmin(): Promise<SessionUser> {
+  const user = await requireUser("/admin");
+  if (user.role !== "admin") notFound();
+  return user;
+}

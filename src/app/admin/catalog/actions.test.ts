@@ -15,6 +15,7 @@ vi.mock("@/lib/catalog/admin-device-write", () => ({ createDevice: mocks.createD
 vi.mock("next/cache", () => ({ updateTag: mocks.updateTag }));
 vi.mock("@/lib/auth/session", () => ({ requireAdmin: mocks.requireAdmin }));
 vi.mock("@/lib/catalog/queries", () => ({ CATALOG_TAG: "catalog" }));
+vi.mock("@/lib/store/queries", () => ({ PRODUCTS_TAG: "products" }));
 vi.mock("@/lib/catalog/replace-device-image", () => ({ replaceDeviceImage: mocks.replaceDeviceImage }));
 
 const { createDeviceAction, saveVariantPricesAction, uploadDeviceImageAction } = await import("./actions");
@@ -32,7 +33,7 @@ const image = (bytes: number) => new File([new Uint8Array(bytes)], "phone.jpg", 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.requireAdmin.mockResolvedValue({ id: "u1", role: "admin" });
-  mocks.replaceDeviceImage.mockResolvedValue({ ok: true, url: URL, bytes: 12_800 });
+  mocks.replaceDeviceImage.mockResolvedValue({ ok: true, url: URL, bytes: 12_800, products: { updated: 0, skippedFull: 0, failed: 0 } });
   mocks.createDevice.mockResolvedValue({ ok: true, id: 1501 });
   mocks.setVariantPrices.mockResolvedValue({ ok: true, updated: 2 });
 });
@@ -41,8 +42,26 @@ describe("uploadDeviceImageAction", () => {
   it("replaces the image and refreshes the catalog cache", async () => {
     const result = await uploadDeviceImageAction({}, form({ deviceId: "7", image: image(100) }));
     expect(result).toEqual({ done: "Saved (12.5 KB).", imageUrl: URL });
-    expect(mocks.replaceDeviceImage).toHaveBeenCalledWith(7, expect.any(Buffer));
+    expect(mocks.replaceDeviceImage).toHaveBeenCalledWith(7, expect.any(Buffer), { applyToProducts: false });
     expect(mocks.updateTag).toHaveBeenCalledWith("catalog");
+    expect(mocks.updateTag).not.toHaveBeenCalledWith("products");
+  });
+
+  it("shares the photo with the variants' shop products when ticked", async () => {
+    mocks.replaceDeviceImage.mockResolvedValue({ ok: true, url: URL, bytes: 12_800, products: { updated: 3, skippedFull: 1, failed: 0 } });
+    const result = await uploadDeviceImageAction({}, form({ deviceId: "7", image: image(100), applyToProducts: "on" }));
+    expect(result).toEqual({ done: "Saved (12.5 KB). Also showing on 3 shop products. 1 shop product already had 8 photos and kept them.", imageUrl: URL });
+    expect(mocks.replaceDeviceImage).toHaveBeenCalledWith(7, expect.any(Buffer), { applyToProducts: true });
+    expect(mocks.updateTag).toHaveBeenCalledWith("products");
+  });
+
+  it("reports shop products that could not be updated", async () => {
+    mocks.replaceDeviceImage.mockResolvedValue({ ok: true, url: URL, bytes: 12_800, products: { updated: 1, skippedFull: 0, failed: 1 } });
+    const result = await uploadDeviceImageAction({}, form({ deviceId: "7", image: image(100), applyToProducts: "on" }));
+    expect(result).toEqual({
+      error: "Saved (12.5 KB). Also showing on 1 shop product. Some shop products could not be updated. Try again.",
+      imageUrl: URL,
+    });
   });
 
   it("checks admin access before reading the form", async () => {

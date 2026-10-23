@@ -16,7 +16,15 @@ import { escapeLike } from "./search";
 export const PLACEHOLDER_DIR = "catalog/placeholders/";
 const UPLOAD_DIR = "catalog/devices/";
 
-const LIST_SELECT = "id, name, image_url, is_active, brand:brands!inner(name, slug), category:categories!inner(name, slug)";
+const LIST_SELECT =
+  "id, name, image_url, is_active, brand:brands!inner(name, slug), category:categories!inner(name, slug), variants:device_variants(products(count))";
+
+export const variantProductCounts = z.array(z.object({ products: z.array(z.object({ count: z.number() })) }));
+
+/** Shop products linked to any variant of the device. */
+export function countVariantProducts(variants: z.infer<typeof variantProductCounts>): number {
+  return variants.reduce((sum, v) => sum + v.products.reduce((s, p) => s + p.count, 0), 0);
+}
 
 const listRow = z.object({
   id: z.number(),
@@ -25,6 +33,7 @@ const listRow = z.object({
   is_active: z.boolean(),
   brand: z.object({ name: z.string() }),
   category: z.object({ name: z.string() }),
+  variants: variantProductCounts,
 });
 
 const optionRow = z.object({ name: z.string(), slug: z.string() });
@@ -61,6 +70,8 @@ export interface AdminDeviceRow {
   imageUrl: string | null;
   isActive: boolean;
   hasPlaceholder: boolean;
+  /** Shop products of this device's variants, which can share its photo. */
+  productCount: number;
 }
 
 export function isPlaceholderImage(url: string | null): boolean {
@@ -95,6 +106,7 @@ export async function listAdminDevices(params: DeviceListParams): Promise<{ item
       imageUrl: r.image_url,
       isActive: r.is_active,
       hasPlaceholder: isPlaceholderImage(r.image_url),
+      productCount: countVariantProducts(r.variants),
     })),
     total: count ?? 0,
   };

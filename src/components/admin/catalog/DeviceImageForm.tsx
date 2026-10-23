@@ -8,12 +8,14 @@ interface DeviceImageFormProps {
   deviceId: number;
   deviceName: string;
   imageUrl: string | null;
+  /** Shop products of this device's variants. The share option shows only when there are some. */
+  productCount?: number;
 }
 
 const ACCEPT = "image/jpeg,image/png,image/webp,image/gif,image/avif";
 
 /** Current photo plus a picker that replaces it. The server resizes to 192x192 and compresses to 20 KB or less. */
-export function DeviceImageForm({ deviceId, deviceName, imageUrl }: DeviceImageFormProps) {
+export function DeviceImageForm({ deviceId, deviceName, imageUrl, productCount = 0 }: DeviceImageFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   // Clear the picker only after a successful save, so a rejected file can be retried or swapped
   const [state, run, pending] = useActionState<DeviceImageState, FormData>(async (prev, data) => {
@@ -59,6 +61,12 @@ export function DeviceImageForm({ deviceId, deviceName, imageUrl }: DeviceImageF
       <button type="submit" disabled={pending} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-brand-contrast disabled:opacity-60">
         {pending ? "Uploading…" : "Upload"}
       </button>
+      {productCount > 0 && (
+        <label className="flex basis-full items-center gap-2 text-xs">
+          <input type="checkbox" name="applyToProducts" />
+          Also use as the main photo of all {productCount} shop {productCount === 1 ? "product" : "products"} of this device&apos;s variants (stored once; supplier feeds will stop changing their photos)
+        </label>
+      )}
       <p role="status" className="basis-full text-xs empty:hidden">
         {error ? <span className="text-danger">{error}</span> : state.done}
       </p>

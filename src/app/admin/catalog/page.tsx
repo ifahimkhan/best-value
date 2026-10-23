@@ -3,16 +3,26 @@ import { Suspense } from "react";
 import { DeviceImageForm } from "@/components/admin/catalog/DeviceImageForm";
 import { requireAdmin } from "@/lib/auth/session";
 import { DEVICE_PAGE_SIZE, deviceListHref, parseDeviceListParams, type DeviceListParams } from "@/lib/catalog/admin-device-list";
-import { listAdminDevices } from "@/lib/catalog/admin-devices";
+import { listAdminBrands, listAdminDevices } from "@/lib/catalog/admin-devices";
 
 export const metadata = { title: "Device catalog", robots: { index: false } };
 
 const FILTER_CLASS = "rounded-lg border border-border bg-surface px-3 py-2 text-sm";
 
-function Filters({ params }: { params: DeviceListParams }) {
+async function Filters({ params }: { params: DeviceListParams }) {
+  await requireAdmin();
+  const brands = await listAdminBrands();
   return (
     <form action="/admin/catalog" className="flex flex-wrap gap-2">
       <input name="q" type="search" defaultValue={params.q ?? ""} placeholder="Search device name" className={`${FILTER_CLASS} min-w-56 flex-1`} />
+      <select name="brand" defaultValue={params.brand ?? ""} className={FILTER_CLASS} aria-label="Brand">
+        <option value="">All brands</option>
+        {brands.map((b) => (
+          <option key={b.slug} value={b.slug}>
+            {b.name}
+          </option>
+        ))}
+      </select>
       <select name="image" defaultValue={params.image} className={FILTER_CLASS} aria-label="Photo">
         <option value="placeholder">Placeholder photo</option>
         <option value="custom">Uploaded here</option>

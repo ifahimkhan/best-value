@@ -17,7 +17,7 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ storage: { 
 
 const { logger } = await import("@/lib/logger");
 const { allCalls, callArgs } = await import("@/test/fake-supabase");
-const { isPlaceholderImage, listAdminDevices, removeDeviceImage, setDeviceImage, uploadDeviceImage } = await import("./admin-devices");
+const { isPlaceholderImage, listAdminBrands, listAdminDevices, removeDeviceImage, setDeviceImage, uploadDeviceImage } = await import("./admin-devices");
 
 const PREFIX = "https://db.example.com/storage/v1/object/public/product-images/";
 const PLACEHOLDER = `${PREFIX}catalog/placeholders/phone.png`;
@@ -54,7 +54,7 @@ describe("isPlaceholderImage", () => {
 describe("listAdminDevices", () => {
   it("maps rows and filters to placeholder images by default", async () => {
     fake.respond("devices", { data: [ROW], count: 41 });
-    const result = await listAdminDevices({ q: null, image: "placeholder", page: 2 });
+    const result = await listAdminDevices({ q: null, brand: null, image: "placeholder", page: 2 });
     expect(result).toEqual({
       total: 41,
       items: [{ id: 7, name: "Galaxy S23", brandName: "Samsung", categoryName: "Phones", imageUrl: PLACEHOLDER, isActive: true, hasPlaceholder: true }],
@@ -63,11 +63,18 @@ describe("listAdminDevices", () => {
     expect(callArgs(query, "or")).toEqual(["image_url.is.null,image_url.like.*/catalog/placeholders/*"]);
     expect(callArgs(query, "range")).toEqual([30, 59]);
     expect(callArgs(query, "ilike")).toBeUndefined();
+    expect(callArgs(query, "eq")).toBeUndefined();
+  });
+
+  it("filters by brand slug through the joined brand", async () => {
+    fake.respond("devices", { data: [], count: 0 });
+    await listAdminDevices({ q: null, brand: "samsung", image: "all", page: 1 });
+    expect(callArgs(fake.queriesFor("devices")[0], "eq")).toEqual(["brand.slug", "samsung"]);
   });
 
   it("searches by name with LIKE wildcards escaped", async () => {
     fake.respond("devices", { data: [], count: 0 });
-    await listAdminDevices({ q: "100%_pro", image: "all", page: 1 });
+    await listAdminDevices({ q: "100%_pro", brand: null, image: "all", page: 1 });
     const query = fake.queriesFor("devices")[0];
     expect(callArgs(query, "ilike")).toEqual(["name", "%100\\%\\_pro%"]);
     expect(callArgs(query, "or")).toBeUndefined();
@@ -76,16 +83,38 @@ describe("listAdminDevices", () => {
 
   it("filters to uploaded photos", async () => {
     fake.respond("devices", { data: [{ ...ROW, image_url: UPLOADED }], count: 1 });
-    const result = await listAdminDevices({ q: null, image: "custom", page: 1 });
+    const result = await listAdminDevices({ q: null, brand: null, image: "custom", page: 1 });
     expect(callArgs(fake.queriesFor("devices")[0], "like")).toEqual(["image_url", "%/catalog/devices/%"]);
     expect(result.items[0].hasPlaceholder).toBe(false);
   });
 
   it("returns an empty page on a database error or bad rows", async () => {
     fake.respond("devices", { error: DB_ERROR });
-    expect(await listAdminDevices({ q: null, image: "all", page: 1 })).toEqual({ items: [], total: 0 });
+    expect(await listAdminDevices({ q: null, brand: null, image: "all", page: 1 })).toEqual({ items: [], total: 0 });
     fake.respond("devices", { data: [{ id: "x" }] });
-    expect(await listAdminDevices({ q: null, image: "all", page: 1 })).toEqual({ items: [], total: 0 });
+    expect(await listAdminDevices({ q: null, brand: null, image: "all", page: 1 })).toEqual({ items: [], total: 0 });
+    expect(logger.error).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("listAdminBrands", () => {
+  it("lists every brand by name, hidden ones included", async () => {
+    fake.respond("brands", { data: [{ name: "Apple", slug: "apple" }, { name: "Samsung", slug: "samsung" }] });
+    expect(await listAdminBrands()).toEqual([
+      { name: "Apple", slug: "apple" },
+      { name: "Samsung", slug: "samsung" },
+    ]);
+    const query = fake.queriesFor("brands")[0];
+    expect(callArgs(query, "select")).toEqual(["name, slug"]);
+    expect(callArgs(query, "order")).toEqual(["name"]);
+    expect(callArgs(query, "eq")).toBeUndefined();
+  });
+
+  it("returns no brands on a database error or bad rows", async () => {
+    fake.respond("brands", { error: DB_ERROR });
+    expect(await listAdminBrands()).toEqual([]);
+    fake.respond("brands", { data: [{ name: 1 }] });
+    expect(await listAdminBrands()).toEqual([]);
     expect(logger.error).toHaveBeenCalledTimes(2);
   });
 });

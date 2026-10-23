@@ -3,29 +3,40 @@ import { deviceListHref, parseDeviceId, parseDeviceListParams } from "./admin-de
 
 describe("parseDeviceListParams", () => {
   it("defaults to placeholder devices on page 1", () => {
-    expect(parseDeviceListParams({})).toEqual({ q: null, image: "placeholder", page: 1 });
+    expect(parseDeviceListParams({})).toEqual({ q: null, brand: null, image: "placeholder", page: 1 });
   });
 
   it("reads a search, filter and page", () => {
-    expect(parseDeviceListParams({ q: "  iPhone 15 ", image: "custom", page: "3" })).toEqual({ q: "iPhone 15", image: "custom", page: 3 });
+    expect(parseDeviceListParams({ q: "  iPhone 15 ", brand: "apple", image: "custom", page: "3" })).toEqual({
+      q: "iPhone 15",
+      brand: "apple",
+      image: "custom",
+      page: 3,
+    });
   });
 
   it("ignores unknown filters, bad pages and repeated params", () => {
-    expect(parseDeviceListParams({ image: "evil", page: "-2" })).toEqual({ q: null, image: "placeholder", page: 1 });
-    expect(parseDeviceListParams({ image: ["all", "custom"], page: "1.5" })).toEqual({ q: null, image: "placeholder", page: 1 });
+    expect(parseDeviceListParams({ image: "evil", page: "-2" })).toEqual({ q: null, brand: null, image: "placeholder", page: 1 });
+    expect(parseDeviceListParams({ image: ["all", "custom"], page: "1.5" })).toEqual({ q: null, brand: null, image: "placeholder", page: 1 });
     expect(parseDeviceListParams({ page: "10001" }).page).toBe(1);
+  });
+
+  it.each(["Apple", "apple,samsung", "a.b", "", "x".repeat(121)])("ignores the invalid brand slug %s", (brand) => {
+    expect(parseDeviceListParams({ brand }).brand).toBeNull();
   });
 });
 
 describe("deviceListHref", () => {
-  const base = { q: null, image: "placeholder", page: 1 } as const;
+  const base = { q: null, brand: null, image: "placeholder", page: 1 } as const;
 
   it("omits defaults", () => {
     expect(deviceListHref(base)).toBe("/admin/catalog");
   });
 
   it("encodes changed values", () => {
-    expect(deviceListHref(base, { q: "galaxy s23", image: "all", page: 2 })).toBe("/admin/catalog?q=galaxy+s23&image=all&page=2");
+    expect(deviceListHref(base, { q: "galaxy s23", brand: "samsung", image: "all", page: 2 })).toBe(
+      "/admin/catalog?q=galaxy+s23&brand=samsung&image=all&page=2",
+    );
   });
 });
 

@@ -16,7 +16,7 @@ import { escapeLike } from "./search";
 const PLACEHOLDER_DIR = "catalog/placeholders/";
 const UPLOAD_DIR = "catalog/devices/";
 
-const LIST_SELECT = "id, name, image_url, is_active, brand:brands!inner(name), category:categories!inner(name)";
+const LIST_SELECT = "id, name, image_url, is_active, brand:brands!inner(name, slug), category:categories!inner(name)";
 
 const listRow = z.object({
   id: z.number(),
@@ -26,6 +26,26 @@ const listRow = z.object({
   brand: z.object({ name: z.string() }),
   category: z.object({ name: z.string() }),
 });
+
+const brandRow = z.object({ name: z.string(), slug: z.string() });
+
+export type AdminBrandOption = z.infer<typeof brandRow>;
+
+/** Every brand, hidden ones included, for the catalog filter. */
+export async function listAdminBrands(): Promise<AdminBrandOption[]> {
+  const db = await createClient();
+  const { data, error } = await db.from("brands").select("name, slug").order("name");
+  if (error) {
+    logger.error("listAdminBrands failed", error);
+    return [];
+  }
+  const rows = z.array(brandRow).safeParse(data);
+  if (!rows.success) {
+    logger.error("listAdminBrands returned unexpected rows", rows.error);
+    return [];
+  }
+  return rows.data;
+}
 
 export interface AdminDeviceRow {
   id: number;
@@ -46,6 +66,7 @@ export async function listAdminDevices(params: DeviceListParams): Promise<{ item
   const from = (params.page - 1) * DEVICE_PAGE_SIZE;
   let query = db.from("devices").select(LIST_SELECT, { count: "exact" });
   if (params.q) query = query.ilike("name", `%${escapeLike(params.q)}%`);
+  if (params.brand) query = query.eq("brand.slug", params.brand);
   if (params.image === "placeholder") query = query.or(`image_url.is.null,image_url.like.*/${PLACEHOLDER_DIR}*`);
   if (params.image === "custom") query = query.like("image_url", `%/${UPLOAD_DIR}%`);
   const { data, error, count } = await query.order("name").order("id").range(from, from + DEVICE_PAGE_SIZE - 1);

@@ -1,5 +1,6 @@
 import "server-only";
 import { redirect, notFound } from "next/navigation";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
 
@@ -15,6 +16,8 @@ export interface SessionUser {
 
 /** Signed-in user with their profile, or null. Reads cookies: render inside <Suspense>. */
 export async function getSessionUser(): Promise<SessionUser | null> {
+  // Supabase's getClaims() compares token expiry with Date.now(); opt into request-time first.
+  await connection();
   const supabase = await createClient();
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
   const userId = claimsData?.claims?.sub;

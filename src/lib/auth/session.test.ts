@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect, notFound: mocks.notFound }));
+vi.mock("next/server", () => ({ connection: async () => {} }));
 vi.mock("@/lib/logger", () => ({ logger: { error: mocks.logError, warn: vi.fn(), info: vi.fn() } }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => fake.client }));
 

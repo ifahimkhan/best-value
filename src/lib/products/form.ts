@@ -77,7 +77,8 @@ function crossFieldErrors(text: (key: string) => string): Record<string, string>
   return errors;
 }
 
-const STORAGE_PATH = /^(manual|feeds)\/[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*(\.[a-z]{3,4})?$/;
+// manual/ and feeds/ are product uploads; catalog/devices/ are device photos shared with products
+const STORAGE_PATH = /^(manual|feeds|catalog\/devices)\/[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*(\.[a-z]{3,4})?$/;
 
 /** Keeps only images already stored in our bucket, in the order staff arranged them. */
 function storedImages(values: readonly FormDataEntryValue[], prefix: string): string[] {

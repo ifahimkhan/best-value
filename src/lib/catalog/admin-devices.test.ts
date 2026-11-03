@@ -31,6 +31,7 @@ const ROW = {
   is_active: true,
   brand: { name: "Samsung" },
   category: { name: "Phones" },
+  variants: [{ products: [{ count: 2 }] }, { products: [{ count: 0 }] }],
 };
 
 beforeEach(() => {
@@ -57,7 +58,7 @@ describe("listAdminDevices", () => {
     const result = await listAdminDevices({ q: null, brand: null, category: null, image: "placeholder", page: 2 });
     expect(result).toEqual({
       total: 41,
-      items: [{ id: 7, name: "Galaxy S23", brandName: "Samsung", categoryName: "Phones", imageUrl: PLACEHOLDER, isActive: true, hasPlaceholder: true }],
+      items: [{ id: 7, name: "Galaxy S23", brandName: "Samsung", categoryName: "Phones", imageUrl: PLACEHOLDER, isActive: true, hasPlaceholder: true, productCount: 2 }],
     });
     const query = fake.queriesFor("devices")[0];
     expect(callArgs(query, "or")).toEqual(["image_url.is.null,image_url.like.*/catalog/placeholders/*"]);

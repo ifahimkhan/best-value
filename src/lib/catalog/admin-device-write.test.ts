@@ -85,8 +85,8 @@ describe("getAdminDevice", () => {
     brand: { name: "Samsung", slug: "samsung" },
     category: { name: "Phones", slug: "phone" },
     variants: [
-      { id: 12, label: "8 GB / 256 GB", base_buy_price: "30000.00", is_active: true },
-      { id: 11, label: "8 GB / 128 GB", base_buy_price: "26000.00", is_active: false },
+      { id: 12, label: "8 GB / 256 GB", base_buy_price: "30000.00", is_active: true, products: [{ count: 1 }] },
+      { id: 11, label: "8 GB / 128 GB", base_buy_price: "26000.00", is_active: false, products: [{ count: 2 }] },
     ],
   };
 
@@ -102,6 +102,7 @@ describe("getAdminDevice", () => {
       brandName: "Samsung",
       categoryName: "Phones",
       sellHref: "/sell/phone/samsung/galaxy-s23",
+      productCount: 3,
       variants: [
         { id: 11, label: "8 GB / 128 GB", price: 26000, isActive: false },
         { id: 12, label: "8 GB / 256 GB", price: 30000, isActive: true },

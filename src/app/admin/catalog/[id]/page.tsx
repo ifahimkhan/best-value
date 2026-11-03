@@ -48,7 +48,7 @@ async function EditDevice({ rawId, notices }: { rawId: string; notices: Notices 
       )}
       <div className="rounded-xl border border-border bg-surface p-5">
         <h2 className="mb-3 font-semibold">Photo{device.hasPlaceholder && <span className="ml-2 text-xs font-normal text-muted">placeholder</span>}</h2>
-        <DeviceImageForm deviceId={device.id} deviceName={device.name} imageUrl={device.imageUrl} />
+        <DeviceImageForm deviceId={device.id} deviceName={device.name} imageUrl={device.imageUrl} productCount={device.productCount} />
       </div>
       <VariantPriceForm deviceId={device.id} variants={device.variants} />
     </div>

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { imagePrefix } from "@/lib/products/queries";
 import { createClient } from "@/lib/supabase/server";
-import { isPlaceholderImage, PLACEHOLDER_DIR } from "./admin-devices";
+import { countVariantProducts, isPlaceholderImage, PLACEHOLDER_DIR } from "./admin-devices";
 import type { NewDeviceInput, PriceUpdate } from "./device-form";
 
 // Admin device creation and price edits. Callers must run requireAdmin(); the
@@ -39,7 +39,7 @@ export async function createDevice(input: NewDeviceInput): Promise<CreateDeviceR
 }
 
 const DETAIL_SELECT =
-  "id, name, slug, image_url, is_active, release_year, brand:brands!inner(name, slug), category:categories!inner(name, slug), variants:device_variants(id, label, base_buy_price, is_active)";
+  "id, name, slug, image_url, is_active, release_year, brand:brands!inner(name, slug), category:categories!inner(name, slug), variants:device_variants(id, label, base_buy_price, is_active, products(count))";
 
 const detailRow = z.object({
   id: z.number(),
@@ -50,7 +50,15 @@ const detailRow = z.object({
   release_year: z.number().nullable(),
   brand: z.object({ name: z.string(), slug: z.string() }),
   category: z.object({ name: z.string(), slug: z.string() }),
-  variants: z.array(z.object({ id: z.number(), label: z.string(), base_buy_price: z.coerce.number(), is_active: z.boolean() })),
+  variants: z.array(
+    z.object({
+      id: z.number(),
+      label: z.string(),
+      base_buy_price: z.coerce.number(),
+      is_active: z.boolean(),
+      products: z.array(z.object({ count: z.number() })),
+    }),
+  ),
 });
 
 export interface AdminDeviceVariant {
@@ -71,6 +79,8 @@ export interface AdminDeviceDetail {
   categoryName: string;
   /** Public sell page, e.g. /sell/phone/samsung/galaxy-s23 */
   sellHref: string;
+  /** Shop products of this device's variants, which can share its photo. */
+  productCount: number;
   variants: AdminDeviceVariant[];
 }
 
@@ -98,6 +108,7 @@ export async function getAdminDevice(id: number): Promise<AdminDeviceDetail | nu
     brandName: d.brand.name,
     categoryName: d.category.name,
     sellHref: `/sell/${d.category.slug}/${d.brand.slug}/${d.slug}`,
+    productCount: countVariantProducts(d.variants),
     variants: [...d.variants]
       .sort((a, b) => a.base_buy_price - b.base_buy_price || a.id - b.id)
       .map((v) => ({ id: v.id, label: v.label, price: v.base_buy_price, isActive: v.is_active })),

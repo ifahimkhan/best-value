@@ -64,7 +64,7 @@ async function DeviceList({ params }: { params: DeviceListParams }) {
                 {!d.isActive && " · hidden"}
               </span>
             </span>
-            <DeviceImageForm deviceId={d.id} deviceName={d.name} imageUrl={d.imageUrl} />
+            <DeviceImageForm deviceId={d.id} deviceName={d.name} imageUrl={d.imageUrl} productCount={d.productCount} />
           </li>
         ))}
       </ul>

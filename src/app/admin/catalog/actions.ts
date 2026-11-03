@@ -8,6 +8,7 @@ import { createDevice, setVariantPrices } from "@/lib/catalog/admin-device-write
 import { parseNewDeviceForm, parsePriceForm, type FormErrors } from "@/lib/catalog/device-form";
 import { CATALOG_TAG } from "@/lib/catalog/queries";
 import { replaceDeviceImage } from "@/lib/catalog/replace-device-image";
+import { PRODUCTS_TAG } from "@/lib/store/queries";
 
 // Every action re-checks admin access: the admin layout gate does not run for server actions.
 
@@ -17,6 +18,8 @@ export interface DeviceImageState {
   imageUrl?: string;
 }
 
+const plural = (n: number, noun: string): string => `${n} ${noun}${n === 1 ? "" : "s"}`;
+
 export async function uploadDeviceImageAction(_prev: DeviceImageState, form: FormData): Promise<DeviceImageState> {
   await requireAdmin();
   const deviceId = parseDeviceId(form.get("deviceId"));
@@ -25,10 +28,21 @@ export async function uploadDeviceImageAction(_prev: DeviceImageState, form: For
   if (!(file instanceof File) || file.size === 0) return { error: "Choose an image first." };
   if (file.size > DEVICE_UPLOAD_MAX_BYTES) return { error: DEVICE_UPLOAD_TOO_BIG };
 
-  const result = await replaceDeviceImage(deviceId, Buffer.from(await file.arrayBuffer()));
+  const applyToProducts = form.get("applyToProducts") === "on";
+  const result = await replaceDeviceImage(deviceId, Buffer.from(await file.arrayBuffer()), { applyToProducts });
   if (!result.ok) return { error: result.error };
   updateTag(CATALOG_TAG);
-  return { done: `Saved (${(result.bytes / 1024).toFixed(1)} KB).`, imageUrl: result.url };
+  const { updated, skippedFull, failed } = result.products;
+  if (updated > 0) updateTag(PRODUCTS_TAG);
+  const message = [
+    `Saved (${(result.bytes / 1024).toFixed(1)} KB).`,
+    updated > 0 && `Also showing on ${plural(updated, "shop product")}.`,
+    skippedFull > 0 && `${plural(skippedFull, "shop product")} already had 8 photos and kept them.`,
+    failed > 0 && "Some shop products could not be updated. Try again.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return failed > 0 ? { error: message, imageUrl: result.url } : { done: message, imageUrl: result.url };
 }
 
 export interface NewDeviceState {

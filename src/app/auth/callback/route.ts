@@ -10,6 +10,12 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const next = safeNextPath(searchParams.get("next"));
 
+  // Google (or Supabase) reports a failed/cancelled OAuth attempt as ?error=...
+  if (searchParams.get("error")) {
+    logger.warn("OAuth sign-in rejected", { error: searchParams.get("error_code") ?? searchParams.get("error") });
+    return NextResponse.redirect(new URL("/login?error=oauth", origin));
+  }
+
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);

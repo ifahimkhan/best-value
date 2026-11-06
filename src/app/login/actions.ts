@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { publicEnv } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
@@ -26,8 +27,17 @@ function sendErrorMessage(status: number | undefined, code: string | undefined):
   return GENERIC_ERROR;
 }
 
-function emailCallbackUrl(next: FormDataEntryValue | null): string {
-  const url = new URL("/auth/callback", publicEnv().NEXT_PUBLIC_SITE_URL);
+/** Origin the user is actually on (works on Vercel previews/prod); env value is only a fallback. */
+async function requestOrigin(): Promise<string> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  if (!host) return publicEnv().NEXT_PUBLIC_SITE_URL;
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
+}
+
+async function emailCallbackUrl(next: FormDataEntryValue | null): Promise<string> {
+  const url = new URL("/auth/callback", await requestOrigin());
   url.searchParams.set("next", safeNextPath(typeof next === "string" ? next : null));
   return url.toString();
 }
@@ -46,7 +56,7 @@ export async function sendOtp(_prev: LoginState, formData: FormData): Promise<Lo
       : await supabase.auth.signInWithOtp({
           email: parsed.value,
           // Default Supabase email templates send a link, custom ones send a code: support both
-          options: { shouldCreateUser: true, emailRedirectTo: emailCallbackUrl(formData.get("next")) },
+          options: { shouldCreateUser: true, emailRedirectTo: await emailCallbackUrl(formData.get("next")) },
         });
 
   if (error) {
@@ -98,7 +108,7 @@ export async function signInWithGoogle(formData: FormData): Promise<void> {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: emailCallbackUrl(formData.get("next")) },
+    options: { redirectTo: await emailCallbackUrl(formData.get("next")) },
   });
   if (error || !data.url) {
     logger.error("Google sign-in start failed", error, { status: error?.status, code: error?.code });

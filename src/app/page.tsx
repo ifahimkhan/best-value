@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { listCategories } from "@/lib/catalog/categories";
@@ -15,6 +16,16 @@ const REASONS = [
   { title: "Checked devices", body: "Store devices are tested and graded before they're listed." },
 ] as const;
 
+/** Category picture from categories.icon_url; renders nothing when the row has no image. */
+function CategoryImage({ url }: { url: string | null }) {
+  if (!url) return null;
+  return (
+    <div className="relative mb-3 aspect-square w-full">
+      <Image src={url} alt="" fill sizes="(min-width: 640px) 25vw, 50vw" className="object-contain" />
+    </div>
+  );
+}
+
 async function CategoryGrid() {
   const categories = await listCategories();
   if (categories.length === 0) {
@@ -27,6 +38,7 @@ async function CategoryGrid() {
         <li key={cat.id}>
           {cat.comingSoon ? (
             <div className="rounded-xl border border-dashed border-border bg-surface p-4 opacity-70">
+              <CategoryImage url={cat.iconUrl} />
               <p className="font-semibold">{cat.name}</p>
               <p className="text-xs text-muted">Coming soon</p>
             </div>
@@ -35,6 +47,7 @@ async function CategoryGrid() {
               href={`/sell/${cat.slug}`}
               className="block rounded-xl border border-border bg-surface p-4 transition hover:border-brand hover:shadow-sm"
             >
+              <CategoryImage url={cat.iconUrl} />
               <p className="font-semibold">{cat.name}</p>
               <p className="text-xs text-muted">Sell or buy</p>
             </Link>

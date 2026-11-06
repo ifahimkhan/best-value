@@ -93,6 +93,20 @@ export async function loginAction(prev: LoginState, formData: FormData): Promise
   return sendOtp(prev, formData);
 }
 
+/** Starts Google OAuth (PKCE). Returns through /auth/callback, which exchanges the code. */
+export async function signInWithGoogle(formData: FormData): Promise<void> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: emailCallbackUrl(formData.get("next")) },
+  });
+  if (error || !data.url) {
+    logger.error("Google sign-in start failed", error, { status: error?.status, code: error?.code });
+    redirect("/login?error=oauth");
+  }
+  redirect(data.url);
+}
+
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   const { error } = await supabase.auth.signOut();

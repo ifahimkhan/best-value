@@ -16,6 +16,11 @@ async function LoginContent({ searchParams }: PageProps<"/login">) {
           request a new one below.
         </p>
       )}
+      {error === "oauth" && (
+        <p role="alert" className="mb-4 rounded-lg bg-brand-soft px-3 py-2 text-sm">
+          Google sign-in didn&apos;t work. Please try again or use a one-time code.
+        </p>
+      )}
       <LoginForm next={safeNextPath(typeof next === "string" ? next : null)} />
     </>
   );
@@ -25,7 +30,7 @@ export default function LoginPage(props: PageProps<"/login">) {
   return (
     <section className="mx-auto w-full max-w-md px-4 py-16">
       <h1 className="text-2xl font-bold">Log in or sign up</h1>
-      <p className="mt-2 mb-8 text-muted">We&apos;ll send you a one-time code. No password needed.</p>
+      <p className="mt-2 mb-8 text-muted">Continue with Google, or we&apos;ll send you a one-time code. No password needed.</p>
       <Suspense fallback={<div className="h-40" />}>
         <LoginContent {...props} />
       </Suspense>

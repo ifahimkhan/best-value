@@ -15,6 +15,7 @@ import {
   type QuoteResult,
 } from "@/lib/sell/pricing";
 import { EvaluationSummary } from "./EvaluationSummary";
+import { PhoneGate } from "./PhoneGate";
 import { PickupForm, type PickupDateOption } from "./PickupForm";
 import { QuestionStep } from "./QuestionStep";
 import { parseSavedAnswers, readSavedRaw, saveAnswers } from "./savedAnswers";
@@ -27,6 +28,7 @@ interface SellCalculatorProps {
   questions: readonly EvalQuestion[];
   signedIn: boolean;
   loginHref: string;
+  returnTo: string;
   dates: readonly PickupDateOption[];
   defaultName: string;
   defaultPhone: string;
@@ -133,7 +135,7 @@ interface PickupStepProps extends SellCalculatorProps {
   quote: QuoteResult;
 }
 
-function PickupStep({ signedIn, loginHref, answers, quote, variantId, dates, defaultName, defaultPhone }: PickupStepProps) {
+function PickupStep({ signedIn, loginHref, returnTo, answers, quote, variantId, dates, defaultName, defaultPhone }: PickupStepProps) {
   if (!quote.ok) return <p className="text-danger">Please go back and answer every question.</p>;
   if (!signedIn) {
     return (
@@ -148,6 +150,8 @@ function PickupStep({ signedIn, loginHref, answers, quote, variantId, dates, def
       </div>
     );
   }
+  // Signed in by email (or Google) but no mobile number on the profile yet
+  if (!defaultPhone) return <PhoneGate returnTo={returnTo} />;
   return (
     <PickupForm
       variantId={variantId}

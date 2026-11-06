@@ -71,6 +71,7 @@ async function VariantContent({ categorySlug, brandSlug, deviceSlug, variantSlug
           questions={questions}
           signedIn={user !== null}
           loginHref={`/login?next=${encodeURIComponent(variant.href)}`}
+          returnTo={variant.href}
           dates={dates}
           defaultName={user?.fullName ?? ""}
           defaultPhone={user?.phone?.replace(/^\+91/, "") ?? ""}

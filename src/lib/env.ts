@@ -92,6 +92,12 @@ export function companyEnv(): CompanyEnv {
   return parsed.data;
 }
 
+// Mobile-number login needs an SMS provider (e.g. Twilio) configured in Supabase.
+// Off unless SMS_LOGIN_ENABLED=true, so users are pointed to Google/email instead.
+export function smsLoginEnabled(): boolean {
+  return process.env.SMS_LOGIN_ENABLED === "true";
+}
+
 // Shared secret Vercel Cron sends as "Authorization: Bearer <CRON_SECRET>".
 // When unset, the scheduled feed import endpoint refuses every request.
 const cronSchema = z.object({ CRON_SECRET: z.string().min(16).optional() });

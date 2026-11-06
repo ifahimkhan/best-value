@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { publicEnv } from "@/lib/env";
+import { publicEnv, smsLoginEnabled } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
 import { otpSchema, parseLoginIdentifier, safeNextPath } from "@/lib/validation/auth";
@@ -15,6 +15,8 @@ export interface LoginState {
   info?: string;
 }
 
+const SMS_UNAVAILABLE =
+  "Login by mobile number isn't available right now. Please tap “Continue with Google” (quickest), or enter your email instead.";
 const GENERIC_ERROR = "Something went wrong. Please try again in a minute.";
 
 function sendErrorMessage(status: number | undefined, code: string | undefined): string {
@@ -22,7 +24,7 @@ function sendErrorMessage(status: number | undefined, code: string | undefined):
     return "Too many attempts. Please wait a few minutes and try again.";
   }
   if (code === "phone_provider_disabled" || code === "sms_send_failed") {
-    return "Login by mobile number isn't available yet. Please use your email instead.";
+    return SMS_UNAVAILABLE;
   }
   return GENERIC_ERROR;
 }
@@ -47,6 +49,10 @@ export async function sendOtp(_prev: LoginState, formData: FormData): Promise<Lo
   const parsed = parseLoginIdentifier(raw);
   if (!parsed) {
     return { step: "identify", identifier: raw, error: "Enter a valid 10-digit mobile number or email." };
+  }
+
+  if (parsed.kind === "phone" && !smsLoginEnabled()) {
+    return { step: "identify", identifier: raw, error: SMS_UNAVAILABLE };
   }
 
   const supabase = await createClient();

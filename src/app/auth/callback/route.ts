@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
 import { safeNextPath } from "@/lib/validation/auth";
 import { googleFullName } from "@/lib/auth/google-profile";
-import { PHONE_PROMPT_COOKIE, phonePromptUrl } from "@/lib/auth/phone-prompt";
+import { phonePromptUrl } from "@/lib/auth/phone-prompt";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -45,8 +45,8 @@ export async function GET(request: NextRequest) {
       const user = data.user;
       if (user?.app_metadata?.provider === "google") {
         await syncGoogleName(supabase, user);
-        const alreadyAsked = request.cookies.has(PHONE_PROMPT_COOKIE);
-        if (!alreadyAsked && !(await hasPhone(supabase, user.id))) {
+        // Mobile number is required for Google users; keep asking until one is saved
+        if (!(await hasPhone(supabase, user.id))) {
           return NextResponse.redirect(new URL(phonePromptUrl(next), origin));
         }
       }

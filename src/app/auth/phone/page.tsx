@@ -16,7 +16,7 @@ async function PhoneContent({ searchParams }: PageProps<"/auth/phone">) {
     <>
       <h1 className="text-2xl font-bold">{user.fullName ? `Welcome, ${user.fullName}` : "Welcome"}</h1>
       <p className="mt-2 mb-8 text-muted">
-        Add your mobile number so we can reach you about your orders. This is optional — you can skip it.
+        Please add your mobile number so we can reach you about your orders. No verification code needed.
       </p>
       <PhoneForm next={safeNext} />
     </>

@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
+import { CategoryImage } from "@/components/catalog/CategoryImage";
 import { listCategories } from "@/lib/catalog/categories";
 
 const SELL_STEPS = [
@@ -15,16 +15,6 @@ const REASONS = [
   { title: "GST invoices", body: "Every purchase and every buyback comes with proper paperwork." },
   { title: "Checked devices", body: "Store devices are tested and graded before they're listed." },
 ] as const;
-
-/** Category picture from categories.icon_url; renders nothing when the row has no image. */
-function CategoryImage({ url }: { url: string | null }) {
-  if (!url) return null;
-  return (
-    <div className="relative mb-3 aspect-square w-full">
-      <Image src={url} alt="" fill sizes="(min-width: 640px) 25vw, 50vw" className="object-contain" />
-    </div>
-  );
-}
 
 async function CategoryGrid() {
   const categories = await listCategories();

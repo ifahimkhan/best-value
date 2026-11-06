@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/catalog/Breadcrumbs";
+import { CategoryImage } from "@/components/catalog/CategoryImage";
 import { BRAND } from "@/lib/brand";
 import { listCategories } from "@/lib/catalog/categories";
 
@@ -17,6 +18,7 @@ async function SellCategories() {
       {categories.map((cat) =>
         cat.comingSoon ? (
           <li key={cat.id} className="rounded-xl border border-dashed border-border bg-surface p-5 opacity-70">
+            <CategoryImage url={cat.iconUrl} />
             <p className="font-semibold">{cat.name}</p>
             <p className="text-xs text-muted">Coming soon</p>
           </li>
@@ -26,6 +28,7 @@ async function SellCategories() {
               href={`/sell/${cat.slug}`}
               className="block rounded-xl border border-border bg-surface p-5 transition hover:border-brand"
             >
+              <CategoryImage url={cat.iconUrl} />
               <p className="font-semibold">Sell {cat.name.toLowerCase()}</p>
               <p className="text-xs text-muted">Instant quote</p>
             </Link>

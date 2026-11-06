@@ -3,9 +3,8 @@ import { Suspense } from "react";
 import { ListingFilters } from "@/components/store/ListingFilters";
 import { ProductGrid } from "@/components/store/ProductGrid";
 import { listCategories } from "@/lib/catalog/categories";
-import { listAllBrands } from "@/lib/catalog/queries";
 import { listingHref, PAGE_SIZE, parseListingParams, type ListingParams } from "@/lib/store/listing";
-import { listProducts } from "@/lib/store/queries";
+import { listBrandsWithProducts, listProducts } from "@/lib/store/queries";
 
 export const metadata = {
   title: "Shop checked phones and devices",
@@ -13,7 +12,9 @@ export const metadata = {
 };
 
 async function Listing({ params }: { params: ListingParams }) {
-  const [page, categories, brands] = await Promise.all([listProducts(params), listCategories(), listAllBrands()]);
+  const [page, categories, brands] = await Promise.all([listProducts(params), listCategories(),
+    listBrandsWithProducts(),
+  ]);
   const totalPages = Math.max(1, Math.ceil(page.total / PAGE_SIZE));
 
   return (

@@ -173,6 +173,25 @@ describe("listProducts", () => {
   });
 });
 
+describe("listBrandsWithProducts", () => {
+  it("inner-joins products so brands without products are excluded", async () => {
+    fake.respond("brands", {
+      data: [{ id: 1, name: "Apple", slug: "apple", logo_url: null, products: [{ id: PRODUCT_ID }] }],
+    });
+    expect(await q.listBrandsWithProducts()).toEqual([{ id: 1, name: "Apple", slug: "apple", logoUrl: null }]);
+    const [query] = fake.queriesFor("brands");
+    expect(callArgs(query, "select")).toEqual(["id, name, slug, logo_url, products!inner(id)"]);
+    expect(cache.cacheTag).toHaveBeenCalledWith(q.PRODUCTS_TAG);
+  });
+
+  it("returns [] and caches briefly on error", async () => {
+    fake.respond("brands", { error: DB_ERROR });
+    expect(await q.listBrandsWithProducts()).toEqual([]);
+    expect(log.error).toHaveBeenCalledWith("Failed to load brands with products", DB_ERROR);
+    expect(cache.cacheLife).toHaveBeenCalledWith("seconds");
+  });
+});
+
 describe("getProduct", () => {
   it("rejects an invalid slug without querying", async () => {
     expect(await q.getProduct("Bad Slug!")).toBeNull();

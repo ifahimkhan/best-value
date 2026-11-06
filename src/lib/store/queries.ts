@@ -2,6 +2,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { z } from "zod";
 import { getBrand, getCategory } from "@/lib/catalog/queries";
+import { parseBrandRows, type Brand } from "@/lib/catalog/schemas";
 import { isValidSlug } from "@/lib/catalog/slug";
 import { logger } from "@/lib/logger";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -89,6 +90,25 @@ async function listProductsCached(
   }
   cacheLife("minutes");
   return { items: parseProductSummaries(data), total: count ?? 0 };
+}
+
+/** Brands that have at least one active product. RLS hides inactive products from the anon client. */
+export async function listBrandsWithProducts(): Promise<Brand[]> {
+  "use cache";
+  cacheTag(PRODUCTS_TAG);
+
+  const { data, error } = await createPublicClient()
+    .from("brands")
+    .select("id, name, slug, logo_url, products!inner(id)")
+    .limit(1, { foreignTable: "products" })
+    .order("sort_order");
+  if (error) {
+    cacheLife("seconds");
+    logger.error("Failed to load brands with products", error);
+    return [];
+  }
+  cacheLife("minutes");
+  return parseBrandRows(data);
 }
 
 export async function getProduct(slug: string): Promise<ProductDetail | null> {

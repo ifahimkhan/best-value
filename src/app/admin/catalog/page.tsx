@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { DeviceImageForm } from "@/components/admin/catalog/DeviceImageForm";
 import { requireAdmin } from "@/lib/auth/session";
+import { amazonSearchUrl } from "@/lib/catalog/amazon-search";
 import { DEVICE_PAGE_SIZE, deviceListHref, parseDeviceListParams, type DeviceListParams } from "@/lib/catalog/admin-device-list";
 import { listAdminBrands, listAdminCategories, listAdminDevices } from "@/lib/catalog/admin-devices";
 
@@ -54,15 +55,30 @@ async function DeviceList({ params }: { params: DeviceListParams }) {
       <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
         {items.map((d) => (
           <li key={d.id} className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center">
-            <span className="min-w-0 lg:w-56 lg:shrink-0">
-              <Link href={`/admin/catalog/${d.id}`} className="block truncate font-medium hover:text-brand hover:underline">
-                {d.name}
-              </Link>
-              <span className="block text-xs text-muted">
-                {d.brandName} · {d.categoryName}
-                {d.hasPlaceholder && " · placeholder"}
-                {!d.isActive && " · hidden"}
+            <span className="flex min-w-0 items-start gap-2 lg:w-56 lg:shrink-0">
+              <span className="min-w-0 flex-1">
+                <Link href={`/admin/catalog/${d.id}`} className="block truncate font-medium hover:text-brand hover:underline">
+                  {d.name}
+                </Link>
+                <span className="block text-xs text-muted">
+                  {d.brandName} · {d.categoryName}
+                  {d.hasPlaceholder && " · placeholder"}
+                  {!d.isActive && " · hidden"}
+                </span>
               </span>
+              <a
+                href={amazonSearchUrl(d)}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Search on Amazon"
+                aria-label={`Search ${d.name} on Amazon`}
+                className="shrink-0 rounded-md p-1.5 text-muted hover:bg-background hover:text-brand"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" />
+                </svg>
+              </a>
             </span>
             <DeviceImageForm deviceId={d.id} deviceName={d.name} imageUrl={d.imageUrl} productCount={d.productCount} />
           </li>

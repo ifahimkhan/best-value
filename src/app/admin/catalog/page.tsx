@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { DeviceImageForm } from "@/components/admin/catalog/DeviceImageForm";
 import { requireAdmin } from "@/lib/auth/session";
-import { amazonSearchUrl } from "@/lib/catalog/amazon-search";
+import { googleImageSearchUrl } from "@/lib/catalog/google-image-search";
 import { DEVICE_PAGE_SIZE, deviceListHref, parseDeviceListParams, type DeviceListParams } from "@/lib/catalog/admin-device-list";
 import { listAdminBrands, listAdminCategories, listAdminDevices } from "@/lib/catalog/admin-devices";
 
@@ -67,11 +67,11 @@ async function DeviceList({ params }: { params: DeviceListParams }) {
                 </span>
               </span>
               <a
-                href={amazonSearchUrl(d)}
+                href={googleImageSearchUrl(d)}
                 target="_blank"
                 rel="noopener noreferrer"
-                title="Search on Amazon"
-                aria-label={`Search ${d.name} on Amazon`}
+                title="Search images on Google"
+                aria-label={`Search Google Images for ${d.name}`}
                 className="shrink-0 rounded-md p-1.5 text-muted hover:bg-background hover:text-brand"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
